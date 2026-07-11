@@ -1,6 +1,6 @@
 <?php
 /**
- * 数据库初始化 - 创建文件表
+ * 数据库初始化 - 创建所有表
  * 访问一次即可初始化，初始化后建议删除此文件
  */
 require_once __DIR__ . '/config.php';
@@ -8,7 +8,8 @@ require_once __DIR__ . '/config.php';
 try {
     $db = getDB();
 
-    $sql = "CREATE TABLE IF NOT EXISTS `files` (
+    // 文件表
+    $db->exec("CREATE TABLE IF NOT EXISTS `files` (
         `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
         `filename` VARCHAR(500) NOT NULL COMMENT '原始文件名',
         `stored_name` VARCHAR(64) NOT NULL COMMENT '存储文件名(UUID)',
@@ -19,13 +20,48 @@ try {
         `download_count` INT UNSIGNED NOT NULL DEFAULT 0 COMMENT '下载次数',
         INDEX `idx_ext` (`file_ext`),
         INDEX `idx_upload_time` (`upload_time`)
-    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='文件管理表';";
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='文件管理表'");
 
-    $db->exec($sql);
+    // 系统设置表
+    $db->exec("CREATE TABLE IF NOT EXISTS `settings` (
+        `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+        `setting_key` VARCHAR(64) NOT NULL UNIQUE COMMENT '设置键',
+        `setting_value` TEXT NOT NULL COMMENT '设置值',
+        `updated_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='系统设置表'");
+
+    // 管理员表
+    $db->exec("CREATE TABLE IF NOT EXISTS `admin` (
+        `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+        `username` VARCHAR(64) NOT NULL UNIQUE COMMENT '用户名',
+        `password` VARCHAR(255) NOT NULL COMMENT '密码哈希',
+        `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='管理员表'");
+
+    // 初始化默认设置
+    $db->exec("INSERT IGNORE INTO `settings` (`setting_key`, `setting_value`) VALUES
+        ('max_file_size', '209715200'),
+        ('allow_download', '1'),
+        ('site_name', '文件管理系统')");
+
+    // 初始化默认管理员 admin / admin123
+    $stmt = $db->prepare("SELECT COUNT(*) FROM `admin` WHERE `username` = 'admin'");
+    $stmt->execute();
+    if ((int) $stmt->fetchColumn() === 0) {
+        $hash = password_hash('admin123', PASSWORD_BCRYPT);
+        $db->prepare("INSERT INTO `admin` (`username`, `password`) VALUES ('admin', :pwd)")
+           ->execute([':pwd' => $hash]);
+    }
 
     // 创建上传目录
     if (!is_dir(UPLOAD_DIR)) {
         mkdir(UPLOAD_DIR, 0755, true);
+    }
+
+    // 创建 admin 目录
+    $adminDir = __DIR__ . '/admin';
+    if (!is_dir($adminDir)) {
+        mkdir($adminDir, 0755, true);
     }
 
     // 创建 .htaccess 防止执行上传的 PHP 文件
@@ -46,7 +82,8 @@ try {
     echo "h1{color:#22c55e}span{color:#666}</style></head><body><div class='box'>";
     echo "<h1>✅ 数据库初始化成功</h1>";
     echo "<p>文件上传系统已就绪</p>";
-    echo "<p><span style='color:#ef4444'>⚠ 请立即删除 <code>init.php</code> 以保证安全</span></p>";
+    echo "<p style='color:#f59e0b;font-weight:600'>🔑 默认管理员账号: admin / admin123</p>";
+    echo "<p><span style='color:#ef4444'>⚠ 请立即删除 <code>init.php</code> 并修改默认密码</span></p>";
     echo "<p><a href='index.php' style='color:#3b82f6'>前往文件管理 →</a></p>";
     echo "</div></body></html>";
 

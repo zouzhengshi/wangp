@@ -14,6 +14,11 @@ if ($id <= 0) {
     jsonResponse(400, '请提供有效的文件 ID');
 }
 
+// 检查是否允许下载（预览即文件访问，同样受控）
+if (!isDownloadAllowed()) {
+    jsonResponse(403, '文件访问已被管理员关闭');
+}
+
 try {
     $db = getDB();
     $stmt = $db->prepare('SELECT * FROM `files` WHERE `id` = :id LIMIT 1');

@@ -82,8 +82,8 @@ foreach ($fileList as $file) {
         }
 
         // 检查文件大小
-        if ($file['size'] > MAX_FILE_SIZE) {
-            $errors[] = $file['name'] . ': 文件过大（最大 ' . formatSize(MAX_FILE_SIZE) . '）';
+        if ($file['size'] > getMaxFileSize()) {
+            $errors[] = $file['name'] . ': 文件过大（最大 ' . formatSize(getMaxFileSize()) . '）';
             continue;
         }
 

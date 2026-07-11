@@ -585,9 +585,12 @@ try {
     <a href="index.php" class="header-brand">
         <i class="fa-solid fa-cloud-arrow-up"></i> 文件管理系统
     </a>
-    <div class="header-stats">
-        <span><i class="fa-regular fa-file"></i> 文件数: <strong id="statFiles">--</strong></span>
-        <span><i class="fa-solid fa-hard-drive"></i> 总大小: <strong id="statSize">--</strong></span>
+    <div style="display:flex;align-items:center;gap:16px;">
+        <div class="header-stats">
+            <span><i class="fa-regular fa-file"></i> 文件数: <strong id="statFiles">--</strong></span>
+            <span><i class="fa-solid fa-hard-drive"></i> 总大小: <strong id="statSize">--</strong></span>
+        </div>
+        <a href="admin/" class="btn" title="后台管理"><i class="fa-solid fa-gear"></i></a>
     </div>
 </header>
 
@@ -607,7 +610,7 @@ try {
     <div class="upload-zone" id="uploadZone">
         <i class="fa-solid fa-cloud-arrow-up"></i>
         <h3>点击上传或拖拽文件到此处</h3>
-        <p>支持图片、文档、压缩包、音视频、代码等上百种文件格式 · 单文件最大 200MB</p>
+        <p>支持图片、文档、压缩包、音视频、代码等上百种文件格式 · 单文件最大 <?php echo formatSize(getMaxFileSize()); ?></p>
         <input type="file" id="fileInput" multiple>
     </div>
 
