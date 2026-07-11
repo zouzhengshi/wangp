@@ -15,7 +15,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if ($action === 'save_settings') {
         $maxSize = (int) ($_POST['max_file_size'] ?? 0);
         if ($maxSize > 0) {
-            saveSetting('max_file_size', (string) $maxSize);
+            // 保存时转换为字节
+            saveSetting('max_file_size', (string) ($maxSize * 1048576));
             saveSetting('allow_download', isset($_POST['allow_download']) ? '1' : '0');
             saveSetting('site_name', trim($_POST['site_name'] ?? '文件管理系统'));
             $saved = '设置已保存';
@@ -52,6 +53,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
 // 当前设置
 $maxFileSize = getMaxFileSize();
+// 兼容旧数据：如果值太小（< 1MB），视为异常，回退默认值
+if ($maxFileSize < 1048576) {
+    $maxFileSize = DEFAULT_MAX_FILE_SIZE;
+}
 $allowDownload = isDownloadAllowed();
 $siteName = htmlspecialchars(getSetting('site_name', '文件管理系统'));
 $maxSizeMB = round($maxFileSize / 1048576, 0);
