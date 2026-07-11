@@ -24,7 +24,7 @@ try {
         jsonResponse(404, '文件不存在或已被删除');
     }
 
-    $filePath = UPLOAD_DIR . $file['stored_name'];
+    $filePath = UPLOAD_DIR . basename($file['stored_name']);
 
     if (!file_exists($filePath)) {
         jsonResponse(404, '文件物理文件不存在');

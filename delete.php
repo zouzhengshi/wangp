@@ -38,7 +38,7 @@ try {
 
     $deleted = [];
     foreach ($files as $file) {
-        $filePath = UPLOAD_DIR . $file['stored_name'];
+        $filePath = UPLOAD_DIR . basename($file['stored_name']);
         if (file_exists($filePath)) {
             unlink($filePath);
         }

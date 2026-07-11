@@ -512,6 +512,70 @@ try {
             animation: spin 0.6s linear infinite;
         }
         @keyframes spin { to { transform: rotate(360deg); } }
+
+        /* 预览弹窗 */
+        .preview-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,.85);
+            z-index: 9999;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+        }
+        .preview-overlay img {
+            max-width: 95vw;
+            max-height: 95vh;
+            object-fit: contain;
+            border-radius: 8px;
+            box-shadow: 0 20px 60px rgba(0,0,0,.5);
+        }
+        .preview-overlay video {
+            max-width: 95vw;
+            max-height: 95vh;
+            border-radius: 8px;
+            box-shadow: 0 20px 60px rgba(0,0,0,.5);
+            outline: none;
+        }
+        .preview-overlay audio {
+            width: 400px;
+            max-width: 90vw;
+        }
+        .preview-close {
+            position: absolute;
+            top: 16px;
+            right: 20px;
+            color: #fff;
+            font-size: 32px;
+            cursor: pointer;
+            z-index: 1;
+            opacity: 0.8;
+            transition: opacity 0.2s;
+            background: none;
+            border: none;
+        }
+        .preview-close:hover { opacity: 1; }
+        .preview-info {
+            position: absolute;
+            bottom: 16px;
+            left: 50%;
+            transform: translateX(-50%);
+            color: #fff;
+            font-size: 13px;
+            opacity: 0.7;
+            background: rgba(0,0,0,.5);
+            padding: 6px 16px;
+            border-radius: 20px;
+        }
+        @media (max-width: 768px) {
+            .preview-overlay img, .preview-overlay video {
+                max-width: 100vw;
+                max-height: 90vh;
+                border-radius: 0;
+            }
+            .preview-close { top: 8px; right: 12px; font-size: 28px; }
+        }
     </style>
 </head>
 <body>
@@ -665,7 +729,16 @@ function toast(msg, type = 'info') {
 }
 
 // === 加载文件列表 ===
+let loadFilesAborter = null;
 async function loadFiles() {
+    // 取消上一次未完成的请求
+    if (loadFilesAborter) loadFilesAborter.abort();
+    loadFilesAborter = new AbortController();
+
+    // 立即显示加载态
+    fileTableBody.innerHTML = `<tr><td colspan="8"><div class="empty-state"><div class="loading-spinner"></div><h3 style="margin-top:16px;">加载中...</h3></div></td></tr>`;
+    document.getElementById('pagination').innerHTML = '';
+
     const params = new URLSearchParams({
         action: 'list',
         page: state.page,
@@ -676,7 +749,7 @@ async function loadFiles() {
         ext: state.ext,
     });
     try {
-        const res = await fetch('api.php?' + params.toString());
+        const res = await fetch('api.php?' + params.toString(), { signal: loadFilesAborter.signal });
         const json = await res.json();
         if (json.code === 200) {
             state.files = json.data.files;
@@ -684,14 +757,15 @@ async function loadFiles() {
             state.totalPages = json.data.total_pages;
             renderTable();
             renderPagination();
-            updateStats();
         }
     } catch (e) {
-        toast('加载文件列表失败', 'error');
+        if (e.name !== 'AbortError') {
+            toast('加载文件列表失败', 'error');
+        }
     }
 }
 
-// === 加载统计 ===
+// === 加载统计（仅页面初始化 + 上传/删除后调用，筛选/翻页不触发） ===
 async function updateStats() {
     try {
         const res = await fetch('api.php?action=stats');
@@ -707,11 +781,17 @@ async function updateStats() {
 // === 渲染格式筛选 ===
 function renderExtFilter(exts) {
     const container = document.getElementById('extFilter');
-    let html = '<span class="ext-tag active" data-ext="">全部</span>';
+    let html = '<span class="ext-tag" data-ext="">全部</span>';
     exts.slice(0, 20).forEach(e => {
         html += `<span class="ext-tag" data-ext="${e.file_ext}">${e.file_ext} (${e.cnt})</span>`;
     });
     container.innerHTML = html;
+
+    // 恢复之前选中的筛选状态
+    const activeTag = container.querySelector(`.ext-tag[data-ext="${state.ext}"]`);
+    if (activeTag) activeTag.classList.add('active');
+    else container.querySelector('.ext-tag[data-ext=""]').classList.add('active');
+
     container.querySelectorAll('.ext-tag').forEach(tag => {
         tag.addEventListener('click', () => {
             container.querySelectorAll('.ext-tag').forEach(t => t.classList.remove('active'));
@@ -746,8 +826,9 @@ function renderTable() {
             <td class="file-meta">${f.download_count}</td>
             <td>
                 <div class="actions">
+                    ${isPreviewable(f.file_ext) ? `<button class="btn btn-preview" data-id="${f.id}" data-filename="${escapeAttr(f.filename)}" data-ext="${f.file_ext}" title="预览"><i class="fa-solid fa-eye"></i></button>` : ''}
                     <a href="download.php?id=${f.id}" class="btn" title="下载"><i class="fa-solid fa-download"></i></a>
-                    <button class="btn btn-danger" onclick="deleteFile(${f.id})" title="删除"><i class="fa-solid fa-trash"></i></button>
+                    <button class="btn btn-danger btn-delete-row" data-id="${f.id}" title="删除"><i class="fa-solid fa-trash"></i></button>
                 </div>
             </td>
         </tr>
@@ -761,6 +842,10 @@ function escapeHtml(str) {
     const div = document.createElement('div');
     div.textContent = str;
     return div.innerHTML;
+}
+
+function escapeAttr(str) {
+    return String(str).replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 }
 
 // === 绑定行事件 ===
@@ -777,6 +862,23 @@ function bindRowEvents() {
             row.classList.toggle('selected', e.target.checked);
             updateSelectAll();
             updateDeleteBtn();
+        });
+
+        // 预览按钮 — 事件委托
+        row.querySelector('.btn-preview')?.addEventListener('click', e => {
+            e.preventDefault();
+            const btn = e.currentTarget;
+            const fid = parseInt(btn.dataset.id);
+            const fname = btn.dataset.filename;
+            const fext = btn.dataset.ext;
+            const file = state.files.find(f => f.id === fid);
+            previewFile(fid, file ? file.filename : fname, fext);
+        });
+
+        // 删除按钮 — 事件委托
+        row.querySelector('.btn-delete-row')?.addEventListener('click', e => {
+            e.preventDefault();
+            deleteFile(parseInt(e.currentTarget.dataset.id));
         });
     });
 }
@@ -855,6 +957,7 @@ function showDeleteModal(ids) {
                 toast(`已删除 ${json.data.deleted_count} 个文件`, 'success');
                 ids.forEach(id => state.selectedIds.delete(id));
                 loadFiles();
+                updateStats();
             } else {
                 toast(json.msg, 'error');
             }
@@ -969,6 +1072,7 @@ async function handleFiles(files) {
             if (uploaded.length > 0) toast(`成功上传 ${uploaded.length} 个文件`, 'success');
             if (errors.length > 0) errors.forEach(e => toast(e, 'error'));
             loadFiles();
+            updateStats();
         } else {
             toast(result.msg || '上传失败', 'error');
             (result.data?.errors || []).forEach(e => toast(e, 'error'));
@@ -980,6 +1084,42 @@ async function handleFiles(files) {
     progressBar.classList.remove('active');
 }
 
+// === 预览 ===
+const previewableExts = ['jpg','jpeg','png','gif','bmp','webp','svg','ico','mp4','webm','mp3','wav','ogg','flac','aac','m4a','pdf'];
+function isPreviewable(ext) { return previewableExts.includes(ext); }
+
+function previewFile(id, filename, ext) {
+    const url = 'view.php?id=' + id;
+    const overlay = document.createElement('div');
+    overlay.className = 'preview-overlay';
+
+    let mediaHtml = '';
+    if (['jpg','jpeg','png','gif','bmp','webp','svg','ico'].includes(ext)) {
+        mediaHtml = `<img src="${url}" alt="${escapeHtml(filename)}">`;
+    } else if (['mp4','webm'].includes(ext)) {
+        mediaHtml = `<video src="${url}" controls autoplay></video>`;
+    } else if (['mp3','wav','ogg','flac','aac','m4a'].includes(ext)) {
+        mediaHtml = `<audio src="${url}" controls autoplay></audio>`;
+    } else if (ext === 'pdf') {
+        mediaHtml = `<iframe src="${url}" style="width:90vw;height:90vh;border:none;border-radius:8px;"></iframe>`;
+    } else {
+        mediaHtml = `<iframe src="${url}" style="width:90vw;height:90vh;border:none;border-radius:8px;"></iframe>`;
+    }
+
+    overlay.innerHTML = `
+        <button class="preview-close" onclick="this.parentElement.remove()">&times;</button>
+        ${mediaHtml}
+        <div class="preview-info">${escapeHtml(filename)}</div>
+    `;
+    overlay.addEventListener('click', e => {
+        if (e.target === overlay) overlay.remove();
+    });
+    document.addEventListener('keydown', function escClose(e) {
+        if (e.key === 'Escape') { overlay.remove(); document.removeEventListener('keydown', escClose); }
+    });
+    document.body.appendChild(overlay);
+}
+
 // === 刷新 ===
 document.getElementById('btnRefresh').addEventListener('click', () => loadFiles());
 
@@ -987,6 +1127,7 @@ document.getElementById('btnRefresh').addEventListener('click', () => loadFiles(
 document.addEventListener('click', () => hideContextMenu());
 
 // === 开始加载 ===
+updateStats();
 loadFiles();
 </script>
 </body>
