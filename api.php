@@ -21,10 +21,11 @@ try {
         $exts = $db->query('SELECT `file_ext`, COUNT(*) AS cnt FROM `files` GROUP BY `file_ext` ORDER BY cnt DESC')->fetchAll();
 
         jsonResponse(200, 'ok', [
-            'total_files'  => (int) $total,
-            'total_size'   => formatSize((int) $totalSize),
-            'total_size_b' => (int) $totalSize,
-            'extensions'   => $exts,
+            'total_files'    => (int) $total,
+            'total_size'     => formatSize((int) $totalSize),
+            'total_size_b'   => (int) $totalSize,
+            'extensions'     => $exts,
+            'allow_download' => isDownloadAllowed(),
         ]);
     }
 

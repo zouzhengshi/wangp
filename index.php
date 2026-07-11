@@ -710,6 +710,7 @@ let state = {
     search: '',
     ext: '',
     selectedIds: new Set(),
+    allowDownload: true,
 };
 
 const uploadZone = document.getElementById('uploadZone');
@@ -776,6 +777,7 @@ async function updateStats() {
         if (json.code === 200) {
             document.getElementById('statFiles').textContent = json.data.total_files;
             document.getElementById('statSize').textContent = json.data.total_size;
+            state.allowDownload = json.data.allow_download !== false;
             renderExtFilter(json.data.extensions || []);
         }
     } catch (e) {}
@@ -830,7 +832,7 @@ function renderTable() {
             <td>
                 <div class="actions">
                     ${isPreviewable(f.file_ext) ? `<button class="btn btn-preview" data-id="${f.id}" data-filename="${escapeAttr(f.filename)}" data-ext="${f.file_ext}" title="预览"><i class="fa-solid fa-eye"></i></button>` : ''}
-                    <a href="download.php?id=${f.id}" class="btn" title="下载"><i class="fa-solid fa-download"></i></a>
+                    <button class="btn btn-download-row" data-id="${f.id}" title="下载"><i class="fa-solid fa-download"></i></button>
                     <button class="btn btn-danger btn-delete-row" data-id="${f.id}" title="删除"><i class="fa-solid fa-trash"></i></button>
                 </div>
             </td>
@@ -876,6 +878,12 @@ function bindRowEvents() {
             const fext = btn.dataset.ext;
             const file = state.files.find(f => f.id === fid);
             previewFile(fid, file ? file.filename : fname, fext);
+        });
+
+        // 下载按钮 — 事件委托
+        row.querySelector('.btn-download-row')?.addEventListener('click', e => {
+            e.preventDefault();
+            downloadFile(parseInt(e.currentTarget.dataset.id));
         });
 
         // 删除按钮 — 事件委托
@@ -928,6 +936,10 @@ function hideContextMenu() { contextMenu.style.display = 'none'; }
 document.addEventListener('click', e => { if (!contextMenu.contains(e.target)) hideContextMenu(); });
 
 function downloadFile(id) {
+    if (!state.allowDownload) {
+        toast('下载功能已被管理员关闭', 'error');
+        return;
+    }
     window.open('download.php?id=' + id, '_blank');
 }
 
