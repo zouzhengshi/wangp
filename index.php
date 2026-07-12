@@ -710,7 +710,7 @@ let state = {
     search: '',
     ext: '',
     selectedIds: new Set(),
-    allowDownload: true,
+    allowDownload: <?php echo isDownloadAllowed() ? 'true' : 'false'; ?>,
 };
 
 const uploadZone = document.getElementById('uploadZone');
