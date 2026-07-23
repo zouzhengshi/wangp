@@ -34,6 +34,7 @@ try {
     $perPage  = min(100, max(10, (int) ($_GET['per_page'] ?? 20)));
     $search   = trim($_GET['search'] ?? '');
     $ext      = trim($_GET['ext'] ?? '');
+    $path     = trim($_GET['path'] ?? '');
     $sort     = $_GET['sort'] ?? 'upload_time';
     $order    = strtoupper($_GET['order'] ?? 'DESC');
 
@@ -50,6 +51,10 @@ try {
     $where = [];
     $params = [];
 
+    // 路径筛选：精确匹配当前目录
+    $where[] = '`filepath` = :filepath';
+    $params[':filepath'] = $path;
+
     if ($search !== '') {
         $where[] = '`filename` LIKE :search';
         $params[':search'] = '%' . $search . '%';
@@ -59,7 +64,7 @@ try {
         $params[':ext'] = strtolower($ext);
     }
 
-    $whereClause = !empty($where) ? 'WHERE ' . implode(' AND ', $where) : '';
+    $whereClause = 'WHERE ' . implode(' AND ', $where);
 
     // 总数
     $countStmt = $db->prepare("SELECT COUNT(*) FROM `files` $whereClause");
@@ -95,12 +100,43 @@ try {
         ];
     }, $files);
 
+    // 查询子文件夹
+    $folders = [];
+    $folderStmt = $db->prepare(
+        "SELECT DISTINCT
+            SUBSTRING_INDEX(SUBSTR(`filepath`, :len), '/', 1) AS `name`,
+            CONCAT(:path_prefix, SUBSTRING_INDEX(SUBSTR(`filepath`, :len2), '/', 1), '/') AS `fullpath`
+         FROM `files`
+         WHERE `filepath` LIKE :path_like
+           AND `filepath` != :path_exact
+           AND LENGTH(`filepath`) > :minlen"
+    );
+    $pathLen = strlen($path) + 1;
+    $folderStmt->execute([
+        ':len'        => $pathLen,
+        ':len2'       => $pathLen,
+        ':path_prefix'=> $path,
+        ':path_like'  => $path . '%',
+        ':path_exact' => $path,
+        ':minlen'     => strlen($path),
+    ]);
+    while ($row = $folderStmt->fetch()) {
+        if ($row['name'] !== '') {
+            $folders[] = [
+                'name'     => $row['name'],
+                'fullpath' => $row['fullpath'],
+            ];
+        }
+    }
+
     jsonResponse(200, 'ok', [
         'files'       => $files,
+        'folders'     => $folders,
         'total'       => $total,
         'page'        => $page,
         'per_page'    => $perPage,
         'total_pages' => ceil($total / $perPage),
+        'current_path'=> $path,
     ]);
 
 } catch (PDOException $e) {

@@ -652,6 +652,9 @@ try {
         <!-- 动态生成 -->
     </div>
 
+    <!-- 面包屑导航 -->
+    <div class="breadcrumbs" id="breadcrumbs" style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:12px;font-size:13px;"></div>
+
     <!-- 文件列表 -->
     <div class="file-table-wrap">
         <table>
@@ -715,6 +718,7 @@ let state = {
     ext: '',
     selectedIds: new Set(),
     allowDownload: <?php echo isDownloadAllowed() ? 'true' : 'false'; ?>,
+    currentPath: '',
 };
 
 const uploadZone = document.getElementById('uploadZone');
@@ -755,14 +759,18 @@ async function loadFiles() {
         order: state.order,
         search: state.search,
         ext: state.ext,
+        path: state.currentPath,
     });
     try {
         const res = await fetch('api.php?' + params.toString(), { signal: loadFilesAborter.signal });
         const json = await res.json();
         if (json.code === 200) {
             state.files = json.data.files;
+            state.folders = json.data.folders || [];
             state.total = json.data.total;
             state.totalPages = json.data.total_pages;
+            state.currentPath = json.data.current_path || '';
+            renderBreadcrumbs();
             renderTable();
             renderPagination();
         }
@@ -812,36 +820,101 @@ function renderExtFilter(exts) {
     });
 }
 
+// === 面包屑导航 ===
+function renderBreadcrumbs() {
+    const container = document.getElementById('breadcrumbs');
+    let html = '<span class="btn" onclick="navigateTo(\'\')" style="cursor:pointer;"><i class="fa-solid fa-home"></i> 根目录</span>';
+    if (state.currentPath !== '') {
+        const parts = state.currentPath.replace(/\/$/, '').split('/');
+        let accumulated = '';
+        parts.forEach((part, i) => {
+            accumulated += part + '/';
+            html += '<i class="fa-solid fa-chevron-right" style="color:#94a3b8;font-size:10px;"></i>';
+            if (i === parts.length - 1) {
+                html += '<span class="btn active" style="cursor:default;">' + escapeHtml(part) + '</span>';
+            } else {
+                html += '<span class="btn" onclick="navigateTo(\'' + escapeAttr(accumulated) + '\')" style="cursor:pointer;">' + escapeHtml(part) + '</span>';
+            }
+        });
+    }
+    container.innerHTML = html;
+}
+function navigateTo(path) {
+    state.currentPath = path;
+    state.page = 1;
+    state.selectedIds.clear();
+    state.ext = '';
+    loadFiles();
+    updateStats();
+}
+function goUp() {
+    if (state.currentPath === '') return;
+    const parts = state.currentPath.replace(/\/$/, '').split('/');
+    parts.pop();
+    navigateTo(parts.length > 0 ? parts.join('/') + '/' : '');
+}
+
 // === 渲染表格 ===
 function renderTable() {
-    if (state.files.length === 0) {
+    const hasFolders = state.folders && state.folders.length > 0;
+    const hasFiles = state.files.length > 0;
+
+    if (!hasFiles && !hasFolders) {
         fileTableBody.innerHTML = `<tr><td colspan="8">
             <div class="empty-state">
                 <i class="fa-solid fa-folder-open"></i>
-                <h3>暂无文件</h3>
-                <p>上传文件开始使用吧</p>
+                <h3>此目录为空</h3>
+                <p>上传文件或文件夹开始使用吧</p>
             </div>
         </td></tr>`;
         return;
     }
-    fileTableBody.innerHTML = state.files.map(f => `
-        <tr data-id="${f.id}" class="${state.selectedIds.has(f.id) ? 'selected' : ''}">
-            <td class="check-col"><input type="checkbox" class="row-checkbox" data-id="${f.id}" ${state.selectedIds.has(f.id) ? 'checked' : ''}></td>
-            <td><div class="file-icon"><i class="fa-regular ${f.icon}"></i></div></td>
-            <td><div class="file-name" title="${escapeHtml(f.filename)}">${escapeHtml(f.filename)}</div></td>
-            <td><span class="file-ext">${f.file_ext}</span></td>
-            <td class="file-meta">${f.size_format}</td>
-            <td class="file-meta">${f.upload_time}</td>
-            <td class="file-meta">${f.download_count}</td>
-            <td>
-                <div class="actions">
-                    ${isPreviewable(f.file_ext) ? `<button class="btn btn-preview" data-id="${f.id}" data-filename="${escapeAttr(f.filename)}" data-ext="${f.file_ext}" title="预览"><i class="fa-solid fa-eye"></i></button>` : ''}
-                    <button class="btn btn-download-row" data-id="${f.id}" title="下载"><i class="fa-solid fa-download"></i></button>
+
+    let rows = '';
+
+    // 渲染子文件夹
+    if (hasFolders) {
+        state.folders.forEach(fd => {
+            rows += `<tr class="folder-row" data-path="${escapeAttr(fd.fullpath)}">
+                <td class="check-col"></td>
+                <td><div class="file-icon"><i class="fa-solid fa-folder" style="color:#f59e0b;"></i></div></td>
+                <td>
+                    <div class="file-name" style="cursor:pointer;color:#4f46e5;" onclick="navigateTo('${escapeAttr(fd.fullpath)}')" title="${escapeHtml(fd.name)}">
+                        📁 ${escapeHtml(fd.name)}
+                    </div>
+                </td>
+                <td><span class="file-ext" style="background:#fef3c7;color:#92400e;">文件夹</span></td>
+                <td class="file-meta">--</td>
+                <td class="file-meta">--</td>
+                <td class="file-meta">--</td>
+                <td></td>
+            </tr>`;
+        });
+    }
+
+    // 渲染文件
+    if (hasFiles) {
+        rows += state.files.map(f => `
+            <tr data-id="${f.id}" class="${state.selectedIds.has(f.id) ? 'selected' : ''}">
+                <td class="check-col"><input type="checkbox" class="row-checkbox" data-id="${f.id}" ${state.selectedIds.has(f.id) ? 'checked' : ''}></td>
+                <td><div class="file-icon"><i class="fa-regular ${f.icon}"></i></div></td>
+                <td><div class="file-name" title="${escapeHtml(f.filename)}">${escapeHtml(f.filename)}</div></td>
+                <td><span class="file-ext">${f.file_ext}</span></td>
+                <td class="file-meta">${f.size_format}</td>
+                <td class="file-meta">${f.upload_time}</td>
+                <td class="file-meta">${f.download_count}</td>
+                <td>
+                    <div class="actions">
+                        ${isPreviewable(f.file_ext) ? `<button class="btn btn-preview" data-id="${f.id}" data-filename="${escapeAttr(f.filename)}" data-ext="${f.file_ext}" title="预览"><i class="fa-solid fa-eye"></i></button>` : ''}
+                        <button class="btn btn-download-row" data-id="${f.id}" title="下载"><i class="fa-solid fa-download"></i></button>
                     <button class="btn btn-danger btn-delete-row" data-id="${f.id}" title="删除"><i class="fa-solid fa-trash"></i></button>
                 </div>
             </td>
         </tr>
     `).join('');
+    }
+
+    fileTableBody.innerHTML = rows;
     bindRowEvents();
     updateSelectAll();
     updateDeleteBtn();

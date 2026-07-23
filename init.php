@@ -16,11 +16,21 @@ try {
         `file_size` BIGINT UNSIGNED NOT NULL DEFAULT 0 COMMENT '文件大小(字节)',
         `file_type` VARCHAR(255) NOT NULL DEFAULT '' COMMENT 'MIME类型',
         `file_ext` VARCHAR(20) NOT NULL DEFAULT '' COMMENT '文件扩展名(小写)',
+        `filepath` VARCHAR(500) NOT NULL DEFAULT '' COMMENT '文件所在目录路径(相对于根)',
         `upload_time` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '上传时间',
         `download_count` INT UNSIGNED NOT NULL DEFAULT 0 COMMENT '下载次数',
         INDEX `idx_ext` (`file_ext`),
+        INDEX `idx_filepath` (`filepath`),
         INDEX `idx_upload_time` (`upload_time`)
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='文件管理表'");
+
+    // 兼容旧表：如果 filepath 列不存在则添加
+    try {
+        $db->exec("ALTER TABLE `files` ADD COLUMN `filepath` VARCHAR(500) NOT NULL DEFAULT '' COMMENT '文件所在目录路径' AFTER `file_ext`");
+        $db->exec("ALTER TABLE `files` ADD INDEX `idx_filepath` (`filepath`)");
+    } catch (\Throwable $e) {
+        // 列或索引已存在则忽略
+    }
 
     // 系统设置表
     $db->exec("CREATE TABLE IF NOT EXISTS `settings` (

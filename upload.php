@@ -19,11 +19,11 @@ if (empty($_FILES)) {
 $uploadedFiles = [];
 $errors = [];
 
-// 规范化 $_FILES 数组（支持单文件和多文件上传）
+// 规范化 $_FILES 数组(支持单文件和多文件上传)
 function normalizeFiles(): array {
     $result = [];
 
-    // 前端用 FormData append('files[]', f)，PHP 收到 $_FILES['files']
+    // 前端用 FormData append('files[]', f),PHP 收到 $_FILES['files']
     $input = $_FILES['files'] ?? $_FILES;
 
     // 检查是否是扁平的单文件结构: ['name'=>'x', 'type'=>'y', ...]
@@ -74,7 +74,7 @@ foreach ($fileList as $file) {
                     $errorMsg = '没有选择文件';
                     break;
                 default:
-                    $errorMsg = '上传失败，错误码: ' . $file['error'];
+                    $errorMsg = '上传失败,错误码: ' . $file['error'];
                     break;
             }
             $errors[] = $file['name'] . ': ' . $errorMsg;
@@ -83,7 +83,7 @@ foreach ($fileList as $file) {
 
         // 检查文件大小
         if ($file['size'] > getMaxFileSize()) {
-            $errors[] = $file['name'] . ': 文件过大（最大 ' . formatSize(getMaxFileSize()) . '）';
+            $errors[] = $file['name'] . ': 文件过大(最大 ' . formatSize(getMaxFileSize()) . ')';
             continue;
         }
 
@@ -98,6 +98,15 @@ foreach ($fileList as $file) {
             continue;
         }
 
+        // 提取路径：文件夹上传时 webkitRelativePath = "a/b/file.jpg" → filepath="a/b/", filename="file.jpg"
+        $originalName = $file['name'];
+        $filePath = '';
+        if (strpos($originalName, '/') !== false) {
+            $parts = explode('/', $originalName);
+            $originalName = array_pop($parts);
+            $filePath = implode('/', $parts) . '/';
+        }
+
         // 生成唯一存储名
         $storedName = bin2hex(random_bytes(16)) . '.' . $ext;
         $destPath = UPLOAD_DIR . $storedName;
@@ -110,15 +119,16 @@ foreach ($fileList as $file) {
 
         // 写入数据库
         $stmt = $db->prepare(
-            'INSERT INTO `files` (`filename`, `stored_name`, `file_size`, `file_type`, `file_ext`) 
-             VALUES (:filename, :stored_name, :file_size, :file_type, :file_ext)'
+            'INSERT INTO `files` (`filename`, `stored_name`, `file_size`, `file_type`, `file_ext`, `filepath`)
+             VALUES (:filename, :stored_name, :file_size, :file_type, :file_ext, :filepath)'
         );
         $stmt->execute([
-            ':filename'    => $file['name'],
+            ':filename'    => $originalName,
             ':stored_name' => $storedName,
             ':file_size'   => $file['size'],
             ':file_type'   => $file['type'] ?: mime_content_type($destPath) ?: 'application/octet-stream',
             ':file_ext'    => $ext,
+            ':filepath'    => $filePath,
         ]);
 
         $uploadedFiles[] = [
@@ -130,7 +140,7 @@ foreach ($fileList as $file) {
         ];
 
     } catch (PDOException $e) {
-        // 数据库错误，删除已存储的文件
+        // 数据库错误,删除已存储的文件
         if (isset($destPath) && file_exists($destPath)) {
             unlink($destPath);
         }
