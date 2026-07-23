@@ -612,6 +612,7 @@ try {
         <h3>点击上传或拖拽文件到此处</h3>
         <p>支持图片、文档、压缩包、音视频、代码等上百种文件格式 · 单文件最大 <?php echo formatSize(getMaxFileSize()); ?></p>
         <input type="file" id="fileInput" multiple>
+        <input type="file" id="folderInput" webkitdirectory style="display:none;">
     </div>
 
     <!-- 进度条 -->
@@ -633,6 +634,9 @@ try {
         </div>
         <button class="btn btn-primary" id="btnUpload">
             <i class="fa-solid fa-plus"></i> 上传文件
+        </button>
+        <button class="btn" id="btnUploadFolder">
+            <i class="fa-solid fa-folder-open"></i> 上传文件夹
         </button>
         <button class="btn btn-danger" id="btnDeleteSelected" style="display:none;">
             <i class="fa-solid fa-trash"></i> 删除选中
@@ -1046,12 +1050,25 @@ fileInput.addEventListener('change', () => {
     fileInput.value = '';
 });
 
+// 文件夹上传
+const folderInput = document.getElementById('folderInput');
+document.getElementById('btnUploadFolder').addEventListener('click', () => folderInput.click());
+folderInput.addEventListener('change', () => {
+    handleFiles(folderInput.files);
+    folderInput.value = '';
+});
+
 // uploadZone 点击由内部 file input 直接处理，无需额外 click 事件
 
 async function handleFiles(files) {
     if (!files || files.length === 0) return;
     const formData = new FormData();
-    for (const f of files) { formData.append('files[]', f); }
+    for (const f of files) {
+        // 文件夹上传保留相对路径
+        const name = f.webkitRelativePath || f.name;
+        const renamed = new File([f], name, { type: f.type });
+        formData.append('files[]', renamed);
+    }
 
     const progressBar = document.getElementById('progressBar');
     const progressFill = document.getElementById('progressFill');
