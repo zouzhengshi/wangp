@@ -258,6 +258,12 @@ try {
         }
         .grid-view .grid-check input { width: 16px; height: 16px; accent-color: var(--primary); }
         .grid-view .folder-card .grid-thumb { background: #fef3c7; }
+        .grid-view .grid-actions {
+            position: absolute; bottom: 4px; right: 4px; display: flex; gap: 3px;
+            opacity: 0; transition: opacity 0.15s;
+        }
+        .grid-view .grid-card:hover .grid-actions { opacity: 1; }
+        .grid-view .grid-actions .btn { padding: 3px 7px; font-size: 11px; }
 
         @media (max-width: 768px) {
             .grid-view { grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 8px; }
@@ -1069,57 +1075,69 @@ function renderGridView() {
         return;
     }
 
-    let cards = '';
+    let html = '';
+
+    // 全选栏
+    if (hasFiles) {
+        const allSel = state.files.every(f => state.selectedIds.has(f.id));
+        html += '<div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;font-size:13px;color:#64748b;">' +
+            '<input type="checkbox" id="gridSelectAll" ' + (allSel ? 'checked' : '') + ' onchange="toggleGridSelectAll(this.checked)" style="accent-color:var(--primary);width:16px;height:16px;">' +
+            '<span>全选</span>' +
+            (state.selectedIds.size > 0 ? '<span style="margin-left:auto;">已选 ' + state.selectedIds.size + ' 个</span>' : '') +
+            '</div>';
+    }
+
     // 文件夹卡片
     if (hasFolders) {
         state.folders.forEach(fd => {
-            cards += `<div class="grid-card folder-card" onclick="navigateTo('${escapeAttr(fd.fullpath)}')" title="${escapeHtml(fd.name)}">
-                <div class="grid-thumb" style="position:relative;">
-                    <i class="fa-solid fa-folder thumb-icon" style="color:#f59e0b;"></i>
-                </div>
-                <div class="grid-info">
-                    <div class="grid-name">📁 ${escapeHtml(fd.name)}</div>
-                </div>
-            </div>`;
+            html += '<div class="grid-card folder-card" onclick="navigateTo(\'' + escapeAttr(fd.fullpath) + '\')" title="' + escapeHtml(fd.name) + '">' +
+                '<div class="grid-thumb" style="position:relative;">' +
+                    '<i class="fa-solid fa-folder thumb-icon" style="color:#f59e0b;"></i>' +
+                '</div>' +
+                '<div class="grid-info"><div class="grid-name">📁 ' + escapeHtml(fd.name) + '</div></div>' +
+            '</div>';
         });
     }
+
     // 文件卡片
     if (hasFiles) {
         state.files.forEach(f => {
             const isImg = imgExts.includes(f.file_ext);
             const isVid = vidExts.includes(f.file_ext);
-            const selected = state.selectedIds.has(f.id) ? ' style="border-color:var(--primary);box-shadow:0 0 0 2px rgba(79,70,229,.2);"' : '';
+            const sel = state.selectedIds.has(f.id);
+            const selStyle = sel ? ' style="border-color:var(--primary);box-shadow:0 0 0 2px rgba(79,70,229,.2);"' : '';
             let thumbHtml = '';
             if (isImg) {
-                thumbHtml = `<img src="view.php?id=${f.id}" alt="${escapeHtml(f.filename)}" loading="lazy">`;
+                thumbHtml = '<img src="view.php?id=' + f.id + '" alt="' + escapeHtml(f.filename) + '" loading="lazy">';
             } else if (isVid) {
-                thumbHtml = `<video src="view.php?id=${f.id}" preload="metadata" style="width:100%;height:100%;object-fit:cover;"></video>
-                    <i class="fa-solid fa-play thumb-video" style="position:absolute;"></i>`;
+                thumbHtml = '<video src="view.php?id=' + f.id + '" preload="metadata" style="width:100%;height:100%;object-fit:cover;"></video>' +
+                    '<i class="fa-solid fa-play thumb-video" style="position:absolute;"></i>';
             } else {
-                thumbHtml = `<i class="fa-regular ${f.icon} thumb-icon"></i>`;
+                thumbHtml = '<i class="fa-regular ' + f.icon + ' thumb-icon"></i>';
             }
-            cards += `<div class="grid-card" data-id="${f.id}"${selected}>
-                <div class="grid-thumb" style="position:relative;">
-                    <div class="grid-check" onclick="event.stopPropagation();">
-                        <input type="checkbox" ${selected ? 'checked' : ''} onchange="toggleGridSelect(${f.id}, this.checked)">
-                    </div>
-                    ${thumbHtml}
-                </div>
-                <div class="grid-info" onclick="gridCardClick(${f.id}, '${f.file_ext}')">
-                    <div class="grid-name" title="${escapeHtml(f.filename)}">${escapeHtml(f.filename)}</div>
-                    <div class="grid-meta">${f.size_format}</div>
-                </div>
-            </div>`;
+            html += '<div class="grid-card" data-id="' + f.id + '"' + selStyle + '>' +
+                '<div class="grid-thumb" style="position:relative;">' +
+                    '<div class="grid-check" onclick="event.stopPropagation();">' +
+                        '<input type="checkbox" ' + (sel ? 'checked' : '') + ' onchange="toggleGridSelect(' + f.id + ', this.checked)">' +
+                    '</div>' +
+                    '<div class="grid-actions" onclick="event.stopPropagation();">' +
+                        '<button class="btn" onclick="downloadFile(' + f.id + ')" title="下载"><i class="fa-solid fa-download"></i></button>' +
+                        '<button class="btn btn-danger" onclick="deleteFile(' + f.id + ')" title="删除"><i class="fa-solid fa-trash"></i></button>' +
+                    '</div>' +
+                    thumbHtml +
+                '</div>' +
+                '<div class="grid-info" onclick="gridCardClick(' + f.id + ', \'' + f.file_ext + '\')">' +
+                    '<div class="grid-name" title="' + escapeHtml(f.filename) + '">' + escapeHtml(f.filename) + '</div>' +
+                    '<div class="grid-meta">' + f.size_format + '</div>' +
+                '</div>' +
+            '</div>';
         });
     }
-    grid.innerHTML = cards;
+    grid.innerHTML = html;
 }
 
 function gridCardClick(id, ext) {
-    if (imgExts.includes(ext) || vidExts.includes(ext)) {
-        const file = state.files.find(f => f.id === id);
-        if (file) previewFile(id, file.filename, ext);
-    } else if (ext === 'pdf') {
+    if (imgExts.includes(ext) || vidExts.includes(ext) || ext === 'pdf') {
         const file = state.files.find(f => f.id === id);
         if (file) previewFile(id, file.filename, ext);
     } else {
@@ -1130,6 +1148,13 @@ function gridCardClick(id, ext) {
 function toggleGridSelect(id, checked) {
     if (checked) state.selectedIds.add(id);
     else state.selectedIds.delete(id);
+    updateDeleteBtn();
+    renderGridView();
+}
+
+function toggleGridSelectAll(checked) {
+    if (checked) state.files.forEach(f => state.selectedIds.add(f.id));
+    else state.files.forEach(f => state.selectedIds.delete(f.id));
     updateDeleteBtn();
     renderGridView();
 }
