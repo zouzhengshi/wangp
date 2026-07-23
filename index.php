@@ -686,7 +686,7 @@ try {
         </button>
         <span style="margin-left:auto;display:flex;gap:2px;background:#f1f5f9;border-radius:8px;padding:2px;" id="viewToggle">
             <span class="view-btn active" data-view="list" title="列表视图"><i class="fa-solid fa-list"></i></span>
-            <span class="view-btn" data-view="grid" title="网格视图"><i class="fa-solid fa-grid-2"></i></span>
+            <span class="view-btn" data-view="grid" title="网格视图"><i class="fa-solid fa-table-cells"></i></span>
         </span>
     </div>
 
@@ -901,13 +901,13 @@ function goUp() {
 }
 
 // === 视图切换 ===
-document.getElementById('viewToggle').addEventListener('click', e => {
-    const btn = e.target.closest('.view-btn');
-    if (!btn) return;
-    document.querySelectorAll('.view-btn').forEach(b => b.classList.remove('active'));
-    btn.classList.add('active');
-    state.viewMode = btn.dataset.view;
-    renderTable();
+document.querySelectorAll('.view-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+        document.querySelectorAll('.view-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        state.viewMode = btn.dataset.view;
+        renderTable();
+    });
 });
 
 // === 渲染表格 ===
