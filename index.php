@@ -1080,7 +1080,7 @@ function renderGridView() {
     // 全选栏
     if (hasFiles) {
         const allSel = state.files.every(f => state.selectedIds.has(f.id));
-        html += '<div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;font-size:13px;color:#64748b;">' +
+        html += '<div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;font-size:13px;color:#64748b;grid-column:1/-1;">' +
             '<input type="checkbox" id="gridSelectAll" ' + (allSel ? 'checked' : '') + ' onchange="toggleGridSelectAll(this.checked)" style="accent-color:var(--primary);width:16px;height:16px;">' +
             '<span>全选</span>' +
             (state.selectedIds.size > 0 ? '<span style="margin-left:auto;">已选 ' + state.selectedIds.size + ' 个</span>' : '') +
