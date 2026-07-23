@@ -228,6 +228,46 @@ try {
         .btn:disabled { opacity: 0.5; cursor: not-allowed; }
         .btn.active { background: var(--primary-light); color: var(--primary); border-color: var(--primary); }
 
+        /* 视图切换按钮 */
+        .view-btn {
+            padding: 5px 10px; border-radius: 6px; cursor: pointer;
+            font-size: 13px; color: #94a3b8; transition: all 0.15s;
+        }
+        .view-btn:hover { color: #475569; }
+        .view-btn.active { background: #fff; color: var(--primary); box-shadow: 0 1px 2px rgba(0,0,0,.06); }
+
+        /* 网格视图 */
+        .grid-view { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 10px; }
+        .grid-view .grid-card {
+            background: var(--card-bg); border-radius: var(--radius); border: 1px solid var(--border);
+            overflow: hidden; cursor: pointer; transition: all 0.15s;
+        }
+        .grid-view .grid-card:hover { border-color: var(--primary); box-shadow: 0 4px 16px rgba(0,0,0,.08); transform: translateY(-2px); }
+        .grid-view .grid-thumb {
+            width: 100%; height: 140px; background: #f1f5f9;
+            display: flex; align-items: center; justify-content: center; overflow: hidden;
+        }
+        .grid-view .grid-thumb img { width: 100%; height: 100%; object-fit: cover; }
+        .grid-view .grid-thumb .thumb-icon { font-size: 48px; color: #cbd5e1; }
+        .grid-view .grid-thumb .thumb-video { position: absolute; font-size: 28px; color: rgba(255,255,255,.9); text-shadow:0 2px 8px rgba(0,0,0,.4); }
+        .grid-view .grid-info { padding: 8px 10px; }
+        .grid-view .grid-name { font-size: 12px; font-weight: 500; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+        .grid-view .grid-meta { font-size: 11px; color: var(--text-secondary); margin-top:2px; }
+        .grid-view .grid-check {
+            position: absolute; top: 4px; left: 4px; z-index:1;
+        }
+        .grid-view .grid-check input { width: 16px; height: 16px; accent-color: var(--primary); }
+        .grid-view .folder-card .grid-thumb { background: #fef3c7; }
+
+        @media (max-width: 768px) {
+            .grid-view { grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 8px; }
+            .grid-view .grid-thumb { height: 110px; }
+        }
+        @media (max-width: 480px) {
+            .grid-view { grid-template-columns: repeat(3, 1fr); gap: 6px; }
+            .grid-view .grid-thumb { height: 90px; }
+        }
+
         .ext-filter {
             display: flex;
             gap: 4px;
@@ -644,6 +684,10 @@ try {
         <button class="btn" id="btnRefresh">
             <i class="fa-solid fa-rotate"></i> 刷新
         </button>
+        <span style="margin-left:auto;display:flex;gap:2px;background:#f1f5f9;border-radius:8px;padding:2px;" id="viewToggle">
+            <span class="view-btn active" data-view="list" title="列表视图"><i class="fa-solid fa-list"></i></span>
+            <span class="view-btn" data-view="grid" title="网格视图"><i class="fa-solid fa-grid-2"></i></span>
+        </span>
     </div>
 
     <!-- 格式筛选 -->
@@ -657,7 +701,7 @@ try {
 
     <!-- 文件列表 -->
     <div class="file-table-wrap">
-        <table>
+        <table id="listTable">
             <thead>
                 <tr>
                     <th class="check-col"><input type="checkbox" id="selectAll" title="全选"></th>
@@ -674,6 +718,7 @@ try {
                 <tr><td colspan="8"><div class="empty-state"><div class="loading-spinner"></div><h3 style="margin-top:16px;">加载中...</h3></div></td></tr>
             </tbody>
         </table>
+        <div class="grid-view" id="fileGridView" style="display:none;"></div>
     </div>
 
     <!-- 分页 -->
@@ -719,6 +764,7 @@ let state = {
     selectedIds: new Set(),
     allowDownload: <?php echo isDownloadAllowed() ? 'true' : 'false'; ?>,
     currentPath: '',
+    viewMode: 'list',
 };
 
 const uploadZone = document.getElementById('uploadZone');
@@ -854,8 +900,27 @@ function goUp() {
     navigateTo(parts.length > 0 ? parts.join('/') + '/' : '');
 }
 
+// === 视图切换 ===
+document.getElementById('viewToggle').addEventListener('click', e => {
+    const btn = e.target.closest('.view-btn');
+    if (!btn) return;
+    document.querySelectorAll('.view-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    state.viewMode = btn.dataset.view;
+    renderTable();
+});
+
 // === 渲染表格 ===
 function renderTable() {
+    if (state.viewMode === 'grid') {
+        document.getElementById('listTable').style.display = 'none';
+        document.getElementById('fileGridView').style.display = '';
+        renderGridView();
+        return;
+    }
+    document.getElementById('listTable').style.display = '';
+    document.getElementById('fileGridView').style.display = 'none';
+
     const hasFolders = state.folders && state.folders.length > 0;
     const hasFiles = state.files.length > 0;
 
@@ -989,6 +1054,84 @@ function updateSelectAll() {
 function updateDeleteBtn() {
     btnDeleteSelected.style.display = state.selectedIds.size > 0 ? '' : 'none';
     btnDeleteSelected.innerHTML = `<i class="fa-solid fa-trash"></i> 删除选中 (${state.selectedIds.size})`;
+}
+
+// === 网格视图 ===
+const imgExts = ['jpg','jpeg','png','gif','bmp','webp','svg','ico'];
+const vidExts = ['mp4','webm'];
+function renderGridView() {
+    const grid = document.getElementById('fileGridView');
+    const hasFolders = state.folders && state.folders.length > 0;
+    const hasFiles = state.files.length > 0;
+
+    if (!hasFiles && !hasFolders) {
+        grid.innerHTML = '<div class="empty-state"><i class="fa-solid fa-folder-open"></i><h3>此目录为空</h3><p>上传文件或文件夹开始使用吧</p></div>';
+        return;
+    }
+
+    let cards = '';
+    // 文件夹卡片
+    if (hasFolders) {
+        state.folders.forEach(fd => {
+            cards += `<div class="grid-card folder-card" onclick="navigateTo('${escapeAttr(fd.fullpath)}')" title="${escapeHtml(fd.name)}">
+                <div class="grid-thumb" style="position:relative;">
+                    <i class="fa-solid fa-folder thumb-icon" style="color:#f59e0b;"></i>
+                </div>
+                <div class="grid-info">
+                    <div class="grid-name">📁 ${escapeHtml(fd.name)}</div>
+                </div>
+            </div>`;
+        });
+    }
+    // 文件卡片
+    if (hasFiles) {
+        state.files.forEach(f => {
+            const isImg = imgExts.includes(f.file_ext);
+            const isVid = vidExts.includes(f.file_ext);
+            const selected = state.selectedIds.has(f.id) ? ' style="border-color:var(--primary);box-shadow:0 0 0 2px rgba(79,70,229,.2);"' : '';
+            let thumbHtml = '';
+            if (isImg) {
+                thumbHtml = `<img src="view.php?id=${f.id}" alt="${escapeHtml(f.filename)}" loading="lazy">`;
+            } else if (isVid) {
+                thumbHtml = `<video src="view.php?id=${f.id}" preload="metadata" style="width:100%;height:100%;object-fit:cover;"></video>
+                    <i class="fa-solid fa-play thumb-video" style="position:absolute;"></i>`;
+            } else {
+                thumbHtml = `<i class="fa-regular ${f.icon} thumb-icon"></i>`;
+            }
+            cards += `<div class="grid-card" data-id="${f.id}"${selected}>
+                <div class="grid-thumb" style="position:relative;">
+                    <div class="grid-check" onclick="event.stopPropagation();">
+                        <input type="checkbox" ${selected ? 'checked' : ''} onchange="toggleGridSelect(${f.id}, this.checked)">
+                    </div>
+                    ${thumbHtml}
+                </div>
+                <div class="grid-info" onclick="gridCardClick(${f.id}, '${f.file_ext}')">
+                    <div class="grid-name" title="${escapeHtml(f.filename)}">${escapeHtml(f.filename)}</div>
+                    <div class="grid-meta">${f.size_format}</div>
+                </div>
+            </div>`;
+        });
+    }
+    grid.innerHTML = cards;
+}
+
+function gridCardClick(id, ext) {
+    if (imgExts.includes(ext) || vidExts.includes(ext)) {
+        const file = state.files.find(f => f.id === id);
+        if (file) previewFile(id, file.filename, ext);
+    } else if (ext === 'pdf') {
+        const file = state.files.find(f => f.id === id);
+        if (file) previewFile(id, file.filename, ext);
+    } else {
+        downloadFile(id);
+    }
+}
+
+function toggleGridSelect(id, checked) {
+    if (checked) state.selectedIds.add(id);
+    else state.selectedIds.delete(id);
+    updateDeleteBtn();
+    renderGridView();
 }
 
 // === 右键菜单 ===
