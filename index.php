@@ -724,6 +724,7 @@ try {
                 <tr><td colspan="8"><div class="empty-state"><div class="loading-spinner"></div><h3 style="margin-top:16px;">加载中...</h3></div></td></tr>
             </tbody>
         </table>
+                <div id="gridSelectBar" style="display:none;"></div>
         <div class="grid-view" id="fileGridView" style="display:none;"></div>
     </div>
 
@@ -920,11 +921,13 @@ document.querySelectorAll('.view-btn').forEach(btn => {
 function renderTable() {
     if (state.viewMode === 'grid') {
         document.getElementById('listTable').style.display = 'none';
+        document.getElementById('gridSelectBar').style.display = '';
         document.getElementById('fileGridView').style.display = '';
         renderGridView();
         return;
     }
     document.getElementById('listTable').style.display = '';
+    document.getElementById('gridSelectBar').style.display = 'none';
     document.getElementById('fileGridView').style.display = 'none';
 
     const hasFolders = state.folders && state.folders.length > 0;
@@ -1078,14 +1081,16 @@ function renderGridView() {
     let html = '';
 
     // 全选栏
+    let selectBarHtml = '';
     if (hasFiles) {
         const allSel = state.files.every(f => state.selectedIds.has(f.id));
-        html += '<div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;font-size:13px;color:#64748b;grid-column:1/-1;">' +
-            '<input type="checkbox" id="gridSelectAll" ' + (allSel ? 'checked' : '') + ' onchange="toggleGridSelectAll(this.checked)" style="accent-color:var(--primary);width:16px;height:16px;">' +
+        selectBarHtml = '<div style="display:flex;align-items:center;gap:8px;padding:6px 0;font-size:13px;color:#64748b;">' +
+            '<input type="checkbox" ' + (allSel ? 'checked' : '') + ' onchange="toggleGridSelectAll(this.checked)" style="accent-color:var(--primary);width:16px;height:16px;">' +
             '<span>全选</span>' +
             (state.selectedIds.size > 0 ? '<span style="margin-left:auto;">已选 ' + state.selectedIds.size + ' 个</span>' : '') +
             '</div>';
     }
+    document.getElementById('gridSelectBar').innerHTML = selectBarHtml;
 
     // 文件夹卡片
     if (hasFolders) {
