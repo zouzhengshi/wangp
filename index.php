@@ -237,41 +237,59 @@ try {
         .view-btn.active { background: #fff; color: var(--primary); box-shadow: 0 1px 2px rgba(0,0,0,.06); }
 
         /* 网格视图 */
-        .grid-view { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 10px; }
+        .grid-view { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 12px; }
         .grid-view .grid-card {
             background: var(--card-bg); border-radius: var(--radius); border: 1px solid var(--border);
-            overflow: hidden; cursor: pointer; transition: all 0.15s;
+            overflow: hidden; transition: all 0.2s; position: relative;
+            display: flex; flex-direction: column;
         }
-        .grid-view .grid-card:hover { border-color: var(--primary); box-shadow: 0 4px 16px rgba(0,0,0,.08); transform: translateY(-2px); }
+        .grid-view .grid-card:hover { border-color: var(--primary); box-shadow: 0 8px 24px rgba(0,0,0,.1); transform: translateY(-4px); }
         .grid-view .grid-thumb {
-            width: 100%; height: 140px; background: #f1f5f9;
+            width: 100%; height: 150px; background: #f8fafc;
             display: flex; align-items: center; justify-content: center; overflow: hidden;
+            position: relative; flex-shrink: 0;
         }
         .grid-view .grid-thumb img { width: 100%; height: 100%; object-fit: cover; }
-        .grid-view .grid-thumb .thumb-icon { font-size: 48px; color: #cbd5e1; }
-        .grid-view .grid-thumb .thumb-video { position: absolute; font-size: 28px; color: rgba(255,255,255,.9); text-shadow:0 2px 8px rgba(0,0,0,.4); }
-        .grid-view .grid-info { padding: 8px 10px; }
-        .grid-view .grid-name { font-size: 12px; font-weight: 500; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
-        .grid-view .grid-meta { font-size: 11px; color: var(--text-secondary); margin-top:2px; }
+        .grid-view .grid-thumb video { width: 100%; height: 100%; object-fit: cover; }
+        .grid-view .grid-thumb .thumb-icon { font-size: 52px; color: #cbd5e1; }
+        .grid-view .grid-thumb .thumb-overlay {
+            position: absolute; inset: 0; background: linear-gradient(to top, rgba(0,0,0,.3), transparent 60%);
+            display: flex; align-items: flex-end; justify-content: flex-end; padding: 8px;
+            opacity: 0; transition: opacity 0.2s;
+        }
+        .grid-view .grid-card:hover .thumb-overlay { opacity: 1; }
+        .grid-view .grid-info { padding: 10px 12px; flex: 1; display: flex; flex-direction: column; justify-content: center; }
+        .grid-view .grid-name {
+            font-size: 13px; font-weight: 500; overflow:hidden; text-overflow:ellipsis;
+            white-space:nowrap; line-height: 1.4; color: var(--text);
+        }
+        .grid-view .grid-meta {
+            font-size: 11px; color: var(--text-secondary); margin-top:3px;
+            display: flex; align-items: center; gap: 6px;
+        }
         .grid-view .grid-check {
-            position: absolute; top: 4px; left: 4px; z-index:1;
+            position: absolute; top: 8px; left: 8px; z-index: 2;
+            background: rgba(255,255,255,.9); border-radius: 4px; padding: 3px 4px;
         }
-        .grid-view .grid-check input { width: 16px; height: 16px; accent-color: var(--primary); }
-        .grid-view .folder-card .grid-thumb { background: #fef3c7; }
-        .grid-view .grid-actions {
-            position: absolute; bottom: 4px; right: 4px; display: flex; gap: 3px;
-            opacity: 0; transition: opacity 0.15s;
+        .grid-view .grid-check input { width: 16px; height: 16px; accent-color: var(--primary); cursor: pointer; }
+        .grid-view .folder-card .grid-thumb { background: #fffbeb; }
+        .grid-view .folder-card .grid-thumb .thumb-icon { color: #f59e0b; }
+        .grid-view .grid-card.selected { border-color: var(--primary); box-shadow: 0 0 0 2px rgba(79,70,229,.25); }
+        .grid-view .grid-badge {
+            position: absolute; top: 8px; right: 8px; z-index: 2;
+            font-size: 10px; font-weight: 600; padding: 2px 6px; border-radius: 4px;
+            background: rgba(255,255,255,.85); color: var(--text-secondary);
         }
-        .grid-view .grid-card:hover .grid-actions { opacity: 1; }
-        .grid-view .grid-actions .btn { padding: 3px 7px; font-size: 11px; }
 
         @media (max-width: 768px) {
-            .grid-view { grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 8px; }
-            .grid-view .grid-thumb { height: 110px; }
+            .grid-view { grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 8px; }
+            .grid-view .grid-thumb { height: 120px; }
         }
         @media (max-width: 480px) {
             .grid-view { grid-template-columns: repeat(3, 1fr); gap: 6px; }
-            .grid-view .grid-thumb { height: 90px; }
+            .grid-view .grid-thumb { height: 100px; }
+            .grid-view .grid-name { font-size: 11px; }
+            .grid-view .grid-info { padding: 6px 8px; }
         }
 
         .ext-filter {
@@ -1084,10 +1102,12 @@ function renderGridView() {
     let selectBarHtml = '';
     if (hasFiles) {
         const allSel = state.files.every(f => state.selectedIds.has(f.id));
+        const hasSel = state.selectedIds.size > 0;
         selectBarHtml = '<div style="display:flex;align-items:center;gap:8px;padding:6px 0;font-size:13px;color:#64748b;">' +
             '<input type="checkbox" ' + (allSel ? 'checked' : '') + ' onchange="toggleGridSelectAll(this.checked)" style="accent-color:var(--primary);width:16px;height:16px;">' +
             '<span>全选</span>' +
-            (state.selectedIds.size > 0 ? '<span style="margin-left:auto;">已选 ' + state.selectedIds.size + ' 个</span>' : '') +
+            (hasSel ? '<span style="margin-left:auto;color:var(--primary);font-weight:600;">已选 ' + state.selectedIds.size + ' 个</span>' +
+                '<button class="btn btn-primary" onclick="batchDownload()" style="padding:4px 12px;font-size:12px;margin-left:8px;"><i class="fa-solid fa-download"></i> 打包下载</button>' : '') +
             '</div>';
     }
     document.getElementById('gridSelectBar').innerHTML = selectBarHtml;
@@ -1110,24 +1130,28 @@ function renderGridView() {
             const isImg = imgExts.includes(f.file_ext);
             const isVid = vidExts.includes(f.file_ext);
             const sel = state.selectedIds.has(f.id);
-            const selStyle = sel ? ' style="border-color:var(--primary);box-shadow:0 0 0 2px rgba(79,70,229,.2);"' : '';
-            let thumbHtml = '';
+            const selClass = sel ? ' selected' : '';
+            let badgeHtml = '', thumbHtml = '';
             if (isImg) {
-                thumbHtml = '<img src="view.php?id=' + f.id + '" alt="' + escapeHtml(f.filename) + '" loading="lazy">';
+                badgeHtml = '<div class="grid-badge">图片</div>';
+                thumbHtml = '<img src="view.php?id=' + f.id + '" alt="" loading="lazy">';
             } else if (isVid) {
+                badgeHtml = '<div class="grid-badge">视频</div>';
                 thumbHtml = '<video src="view.php?id=' + f.id + '" preload="metadata" style="width:100%;height:100%;object-fit:cover;"></video>' +
-                    '<i class="fa-solid fa-play thumb-video" style="position:absolute;"></i>';
+                    '<i class="fa-solid fa-play" style="position:absolute;font-size:30px;color:#fff;text-shadow:0 2px 8px rgba(0,0,0,.4);z-index:1;pointer-events:none;"></i>';
             } else {
+                badgeHtml = '<div class="grid-badge">' + f.file_ext + '</div>';
                 thumbHtml = '<i class="fa-regular ' + f.icon + ' thumb-icon"></i>';
             }
-            html += '<div class="grid-card" data-id="' + f.id + '"' + selStyle + '>' +
-                '<div class="grid-thumb" style="position:relative;">' +
+            html += '<div class="grid-card' + selClass + '" data-id="' + f.id + '">' +
+                '<div class="grid-thumb">' +
                     '<div class="grid-check" onclick="event.stopPropagation();">' +
                         '<input type="checkbox" ' + (sel ? 'checked' : '') + ' onchange="toggleGridSelect(' + f.id + ', this.checked)">' +
                     '</div>' +
-                    '<div class="grid-actions" onclick="event.stopPropagation();">' +
-                        '<button class="btn" onclick="downloadFile(' + f.id + ')" title="下载"><i class="fa-solid fa-download"></i></button>' +
-                        '<button class="btn btn-danger" onclick="deleteFile(' + f.id + ')" title="删除"><i class="fa-solid fa-trash"></i></button>' +
+                    badgeHtml +
+                    '<div class="thumb-overlay">' +
+                        '<button class="btn" onclick="event.stopPropagation();downloadFile(' + f.id + ')" title="下载" style="padding:3px 8px;font-size:11px;"><i class="fa-solid fa-download"></i></button>' +
+                        '<button class="btn btn-danger" onclick="event.stopPropagation();deleteFile(' + f.id + ')" title="删除" style="padding:3px 8px;font-size:11px;"><i class="fa-solid fa-trash"></i></button>' +
                     '</div>' +
                     thumbHtml +
                 '</div>' +
@@ -1162,6 +1186,22 @@ function toggleGridSelectAll(checked) {
     else state.files.forEach(f => state.selectedIds.delete(f.id));
     updateDeleteBtn();
     renderGridView();
+}
+
+function batchDownload() {
+    if (state.selectedIds.size === 0) return;
+    const form = document.createElement('form');
+    form.method = 'POST';
+    form.action = 'batch_download.php';
+    form.target = '_blank';
+    const input = document.createElement('input');
+    input.type = 'hidden';
+    input.name = 'ids';
+    input.value = JSON.stringify([...state.selectedIds]);
+    form.appendChild(input);
+    document.body.appendChild(form);
+    form.submit();
+    document.body.removeChild(form);
 }
 
 // === 右键菜单 ===
