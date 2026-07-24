@@ -432,8 +432,6 @@ try {
         @media (max-width: 1024px) {
             .main-container { padding: 14px; }
             .file-name { max-width: 180px; }
-            th:nth-child(6), td:nth-child(6),
-            th:nth-child(7), td:nth-child(7) { display: none; }
         }
 
         /* 小屏平板 (≤768px) */
