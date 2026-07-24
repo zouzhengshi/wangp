@@ -1011,10 +1011,14 @@ function renderTable() {
                     </div>
                 </td>
                 <td><span class="file-ext" style="background:#fef3c7;color:#92400e;">文件夹</span></td>
-                <td class="file-meta">${fd.file_count || 0} 个文件</td>
-                <td class="file-meta">--</td>
-                <td class="file-meta">--</td>
-                <td></td>
+                <td class="file-meta">${fd.total_size || '--'}</td>
+                <td class="file-meta">${fd.latest_time || '--'}</td>
+                <td class="file-meta">${fd.file_count || 0} 文件</td>
+                <td>
+                    <div class="actions">
+                        <button class="btn btn-danger" onclick="deleteFolder('${escapeAttr(fd.fullpath)}')" title="删除文件夹"><i class="fa-solid fa-trash"></i></button>
+                    </div>
+                </td>
             </tr>`;
         });
     }
@@ -1096,6 +1100,28 @@ function bindRowEvents() {
             deleteFile(parseInt(e.currentTarget.dataset.id));
         });
     });
+}
+
+// === 删除文件夹 ===
+async function deleteFolder(fullpath) {
+    if (!confirm('确定删除文件夹 "' + fullpath + '" 及其所有文件？此操作不可恢复。')) return;
+    try {
+        const res = await fetch('delete.php', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ folder_path: fullpath }),
+        });
+        const json = await res.json();
+        if (json.code === 200) {
+            toast('文件夹已删除', 'success');
+            loadFiles();
+            updateStats();
+        } else {
+            toast(json.msg, 'error');
+        }
+    } catch (e) {
+        toast('删除失败', 'error');
+    }
 }
 
 // === 全选 ===

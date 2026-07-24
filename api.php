@@ -126,15 +126,16 @@ try {
         if ($name !== '' && !isset($seen[$name])) {
             $seen[$name] = true;
             $fullpath = $path . $name . '/';
-            // 统计该文件夹内文件数量和大小
-            $statStmt = $db->prepare("SELECT COUNT(*), COALESCE(SUM(`file_size`), 0) FROM `files` WHERE `filepath` LIKE :fp_like");
+            // 统计该文件夹内文件数量和大小及最新时间
+            $statStmt = $db->prepare("SELECT COUNT(*), COALESCE(SUM(`file_size`), 0), MAX(`upload_time`) FROM `files` WHERE `filepath` LIKE :fp_like");
             $statStmt->execute([':fp_like' => $fullpath . '%']);
             $stat = $statStmt->fetch(PDO::FETCH_NUM);
             $folders[] = [
-                'name'      => $name,
-                'fullpath'  => $fullpath,
-                'file_count'=> (int) $stat[0],
-                'total_size'=> formatSize((int) $stat[1]),
+                'name'       => $name,
+                'fullpath'   => $fullpath,
+                'file_count' => (int) $stat[0],
+                'total_size' => formatSize((int) $stat[1]),
+                'latest_time'=> $stat[2] ?? '',
             ];
         }
     }
