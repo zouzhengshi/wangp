@@ -1386,10 +1386,9 @@ async function handleFiles(files) {
     if (!files || files.length === 0) return;
     const formData = new FormData();
     for (const f of files) {
-        // 文件夹上传保留相对路径
-        const name = f.webkitRelativePath || f.name;
-        const renamed = new File([f], name, { type: f.type });
-        formData.append('files[]', renamed);
+        formData.append('files[]', f);
+        // 文件夹上传用单独字段传路径
+        formData.append('paths[]', f.webkitRelativePath || '');
     }
 
     const progressBar = document.getElementById('progressBar');

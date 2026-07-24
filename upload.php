@@ -57,8 +57,9 @@ if (!is_dir(UPLOAD_DIR)) {
 }
 
 $db = getDB();
+$paths = $_POST['paths'] ?? [];
 
-foreach ($fileList as $file) {
+foreach ($fileList as $idx => $file) {
     try {
         // 检查上传错误
         if ($file['error'] !== UPLOAD_ERR_OK) {
@@ -98,13 +99,16 @@ foreach ($fileList as $file) {
             continue;
         }
 
-        // 提取路径：文件夹上传时 webkitRelativePath = "a/b/file.jpg" → filepath="a/b/", filename="file.jpg"
+        // 提取路径：从 paths[] 字段获取文件夹结构
         $originalName = $file['name'];
         $filePath = '';
-        if (strpos($originalName, '/') !== false) {
-            $parts = explode('/', $originalName);
-            $originalName = array_pop($parts);
-            $filePath = implode('/', $parts) . '/';
+        if (!empty($paths[$idx])) {
+            $relPath = $paths[$idx];  // e.g. "PETG多色/img.jpg"
+            $parts = explode('/', $relPath);
+            $originalName = array_pop($parts);  // 纯文件名
+            if (!empty($parts)) {
+                $filePath = implode('/', $parts) . '/';  // "PETG多色/"
+            }
         }
 
         // 生成唯一存储名
