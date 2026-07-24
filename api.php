@@ -100,31 +100,34 @@ try {
         ];
     }, $files);
 
-    // 查询子文件夹
+    // 查询子文件夹（PHP 提取，兼容性更好）
     $folders = [];
-    $folderStmt = $db->prepare(
-        "SELECT DISTINCT
-            SUBSTRING_INDEX(SUBSTR(`filepath`, :len), '/', 1) AS `name`,
-            CONCAT(:path_prefix, SUBSTRING_INDEX(SUBSTR(`filepath`, :len2), '/', 1), '/') AS `fullpath`
-         FROM `files`
+    $subStmt = $db->prepare(
+        "SELECT DISTINCT `filepath` FROM `files`
          WHERE `filepath` LIKE :path_like
-           AND `filepath` != :path_exact
-           AND LENGTH(`filepath`) > :minlen"
+           AND `filepath` != :path_exact"
     );
-    $pathLen = strlen($path) + 1;
-    $folderStmt->execute([
-        ':len'        => $pathLen,
-        ':len2'       => $pathLen,
-        ':path_prefix'=> $path,
+    $subStmt->execute([
         ':path_like'  => $path . '%',
         ':path_exact' => $path,
-        ':minlen'     => strlen($path),
     ]);
-    while ($row = $folderStmt->fetch()) {
-        if ($row['name'] !== '') {
+    $seen = [];
+    while ($row = $subStmt->fetch()) {
+        $fp = $row['filepath'];
+        if ($fp === '' || $fp === $path) continue;
+        // 取 $path 之后的下一级目录
+        $rest = substr($fp, strlen($path));
+        $slashPos = strpos($rest, '/');
+        if ($slashPos !== false) {
+            $name = substr($rest, 0, $slashPos);
+        } else {
+            $name = rtrim($rest, '/');
+        }
+        if ($name !== '' && !isset($seen[$name])) {
+            $seen[$name] = true;
             $folders[] = [
-                'name'     => $row['name'],
-                'fullpath' => $row['fullpath'],
+                'name'     => $name,
+                'fullpath' => $path . $name . '/',
             ];
         }
     }
