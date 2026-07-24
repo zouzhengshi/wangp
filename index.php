@@ -789,7 +789,7 @@ let state = {
     selectedIds: new Set(),
     allowDownload: <?php echo isDownloadAllowed() ? 'true' : 'false'; ?>,
     currentPath: '',
-    viewMode: 'list',
+    viewMode: localStorage.getItem('viewMode') || 'list',
 };
 
 const uploadZone = document.getElementById('uploadZone');
@@ -931,6 +931,7 @@ document.querySelectorAll('.view-btn').forEach(btn => {
         document.querySelectorAll('.view-btn').forEach(b => b.classList.remove('active'));
         btn.classList.add('active');
         state.viewMode = btn.dataset.view;
+        localStorage.setItem('viewMode', state.viewMode);
         renderTable();
     });
 });
@@ -1445,6 +1446,10 @@ document.getElementById('btnRefresh').addEventListener('click', () => loadFiles(
 document.addEventListener('click', () => hideContextMenu());
 
 // === 开始加载 ===
+// 恢复视图偏好
+if (state.viewMode === 'grid') {
+    document.querySelectorAll('.view-btn').forEach(b => { b.classList.toggle('active', b.dataset.view === 'grid'); });
+}
 updateStats();
 loadFiles();
 </script>
