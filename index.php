@@ -954,6 +954,7 @@ function renderFolderBar() {
         '<div class="folder-card-mini" onclick="navigateTo(\'' + escapeAttr(fd.fullpath) + '\')">' +
             '<i class="fa-solid fa-folder"></i>' +
             '<span class="fc-name" title="' + escapeHtml(fd.name) + '">' + escapeHtml(fd.name) + '</span>' +
+            '<span style="font-size:11px;color:#a16207;">' + (fd.file_count || 0) + '个</span>' +
         '</div>'
     ).join('');
 }
@@ -1010,7 +1011,7 @@ function renderTable() {
                     </div>
                 </td>
                 <td><span class="file-ext" style="background:#fef3c7;color:#92400e;">文件夹</span></td>
-                <td class="file-meta">--</td>
+                <td class="file-meta">${fd.file_count || 0} 个文件</td>
                 <td class="file-meta">--</td>
                 <td class="file-meta">--</td>
                 <td></td>
