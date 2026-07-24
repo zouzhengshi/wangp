@@ -237,7 +237,7 @@ try {
         .view-btn.active { background: #fff; color: var(--primary); box-shadow: 0 1px 2px rgba(0,0,0,.06); }
 
         /* 网格视图 */
-        .grid-view { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 12px; }
+        .grid-view { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 12px; padding: 4px; }
         .grid-view .grid-card {
             background: var(--card-bg); border-radius: var(--radius); border: 1px solid var(--border);
             overflow: hidden; transition: all 0.2s; position: relative;
