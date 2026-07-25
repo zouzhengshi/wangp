@@ -434,6 +434,12 @@ try {
             .ext-filter { gap: 3px; }
             .ext-tag { padding: 3px 8px; font-size: 11px; }
 
+            /* 移动端全选栏 */
+            #mobileSelectBar {
+                display: flex; align-items: center; gap: 8px;
+                padding: 6px 0; margin-bottom: 8px; font-size: 13px; color: #64748b;
+            }
+
             /* 表格转卡片 */
             .file-table-wrap { background: transparent; box-shadow: none; border-radius: 0; }
             table, thead, tbody, th, td, tr { display: block; }
@@ -443,7 +449,7 @@ try {
                 border-radius: var(--radius);
                 box-shadow: var(--shadow);
                 margin-bottom: 10px;
-                padding: 12px;
+                padding: 12px 12px 12px 42px; /* 左侧留空给checkbox */
                 position: relative;
                 border: 1px solid var(--border);
             }
@@ -453,10 +459,10 @@ try {
             }
             .check-col {
                 position: absolute;
-                top: 12px;
-                left: 12px;
+                top: 14px;
+                left: 10px;
                 width: auto;
-                z-index: 1;
+                z-index: 2;
             }
             .check-col input { width: 18px; height: 18px; }
             td {
@@ -466,12 +472,12 @@ try {
                 align-items: center;
                 gap: 8px;
             }
-            tbody tr:not(.folder-row) td:first-of-type { display: none; } /* 文件行隐藏多余checkbox列 */
-            td:nth-of-type(2) { /* 图标 + 文件名放一起 */ }
+            tbody tr td:first-of-type { display: none; } /* 隐藏所有行的第一个td，改为绝对定位 */
             .file-icon { width: 28px; height: 28px; font-size: 16px; margin-right: 4px; }
             .file-name { max-width: none; white-space: normal; word-break: break-all; font-size: 14px; }
             .file-meta { font-size: 11px; }
             .file-ext { font-size: 10px; padding: 1px 6px; }
+            tbody tr.folder-row .file-name { margin-left: 0; }
 
             /* 卡片内操作按钮 */
             .actions { margin-top: 6px; justify-content: flex-end; border-top: 1px solid var(--border); padding-top: 8px; }
@@ -723,6 +729,7 @@ try {
 
     <!-- 文件列表 -->
     <div class="file-table-wrap">
+        <div id="mobileSelectBar" style="display:none;"></div>
         <table id="listTable">
             <thead>
                 <tr>
@@ -1013,6 +1020,19 @@ function renderTable() {
         </tr>
     `).join('');
     }
+    // 更新移动端全选栏
+    const totalItems = (state.files.length || 0) + ((state.folders || []).length || 0);
+    const totalSel = state.selectedIds.size + state.selectedFolders.size;
+    const mb = document.getElementById('mobileSelectBar');
+    if (totalItems > 0 && window.innerWidth <= 768) {
+        mb.style.display = '';
+        const allSel = totalSel === totalItems;
+        mb.innerHTML = '<input type="checkbox" ' + (allSel ? 'checked' : '') + ' onchange="mobileSelectAll(this.checked)" style="accent-color:var(--primary);width:16px;height:16px;">' +
+            '<span>全选</span>' +
+            (totalSel > 0 ? '<span style="margin-left:auto;color:var(--primary);font-weight:600;">已选 ' + totalSel + ' 个</span>' : '');
+    } else {
+        mb.style.display = 'none';
+    }
 
     fileTableBody.innerHTML = rows;
     bindRowEvents();
@@ -1268,6 +1288,18 @@ function toggleGridSelectAll(checked) {
     else state.files.forEach(f => state.selectedIds.delete(f.id));
     updateDeleteBtn();
     renderGridView();
+}
+
+function mobileSelectAll(checked) {
+    if (checked) {
+        state.files.forEach(f => state.selectedIds.add(f.id));
+        (state.folders || []).forEach(fd => state.selectedFolders.add(fd.fullpath));
+    } else {
+        state.selectedIds.clear();
+        state.selectedFolders.clear();
+    }
+    updateDeleteBtn();
+    renderTable();
 }
 
 function batchDownload() {
