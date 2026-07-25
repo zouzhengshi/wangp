@@ -463,6 +463,7 @@ try {
                 left: 10px;
                 width: auto;
                 z-index: 2;
+                display: block !important;
             }
             .check-col input { width: 18px; height: 18px; }
             td {
