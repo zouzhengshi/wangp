@@ -62,10 +62,9 @@ try {
     }
 
     if ($isSearching) {
-        // 搜索：匹配文件名或文件夹路径
-        $where[] = '(`filename` LIKE :search OR `filepath` LIKE :search2)';
+        // 搜索：匹配文件名（包含路径的文件名也算）
+        $where[] = '`filename` LIKE :search';
         $params[':search'] = '%' . $search . '%';
-        $params[':search2'] = '%' . $search . '%';
     }
     if ($ext !== '') {
         $where[] = '`file_ext` = :ext';
@@ -116,14 +115,13 @@ try {
            AND `filepath` != :path_exact"
     );
     $subStmt->execute([
-        ':path_like'  => $path . '%',
+        ':path_like'  => ($isSearching ? $path : $path) . '%',
         ':path_exact' => $path,
     ]);
     $seen = [];
     while ($row = $subStmt->fetch()) {
         $fp = $row['filepath'];
         if ($fp === '' || $fp === $path) continue;
-        // 取 $path 之后的下一级目录
         $rest = substr($fp, strlen($path));
         $slashPos = strpos($rest, '/');
         if ($slashPos !== false) {
@@ -131,6 +129,8 @@ try {
         } else {
             $name = rtrim($rest, '/');
         }
+        // 搜索时过滤文件夹名
+        if ($isSearching && stripos($name, $search) === false && stripos($fp, $search) === false) continue;
         if ($name !== '' && !isset($seen[$name])) {
             $seen[$name] = true;
             $fullpath = $path . $name . '/';
