@@ -1205,13 +1205,15 @@ function renderGridView() {
 
     // 全选栏
     let selectBarHtml = '';
-    if (hasFiles) {
-        const allSel = state.files.every(f => state.selectedIds.has(f.id));
-        const hasSel = state.selectedIds.size > 0;
+    if (hasFiles || hasFolders) {
+        const allFilesSel = hasFiles ? state.files.every(f => state.selectedIds.has(f.id)) : true;
+        const allFoldersSel = hasFolders ? state.folders.every(fd => state.selectedFolders.has(fd.fullpath)) : true;
+        const allSel = allFilesSel && allFoldersSel;
+        const totalSel = state.selectedIds.size + state.selectedFolders.size;
         selectBarHtml = '<div style="display:flex;align-items:center;gap:8px;padding:6px 0;font-size:13px;color:#64748b;">' +
             '<input type="checkbox" ' + (allSel ? 'checked' : '') + ' onchange="toggleGridSelectAll(this.checked)" style="accent-color:var(--primary);width:16px;height:16px;">' +
             '<span>全选</span>' +
-            (hasSel ? '<span style="margin-left:auto;color:var(--primary);font-weight:600;">已选 ' + state.selectedIds.size + ' 个</span>' +
+            (totalSel > 0 ? '<span style="margin-left:auto;color:var(--primary);font-weight:600;">已选 ' + totalSel + ' 个</span>' +
                 '<button class="btn btn-primary" onclick="batchDownload()" style="padding:4px 12px;font-size:12px;margin-left:8px;"><i class="fa-solid fa-download"></i> 打包下载</button>' : '') +
             '</div>';
     }
