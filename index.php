@@ -1109,11 +1109,11 @@ function downloadFolder(fullpath) {
     overlay.innerHTML = '<div class="modal" style="background:#fff;cursor:default;text-align:left;max-width:360px;" onclick="event.stopPropagation();">' +
         '<h3 style="margin-bottom:6px;">📦 下载文件夹</h3>' +
         '<p style="color:#64748b;font-size:13px;margin-bottom:16px;">' + escapeHtml(name) + '</p>' +
-        '<div style="display:flex;flex-direction:column;gap:8px;">' +
-            '<button class="btn btn-primary" style="justify-content:center;padding:12px;" onclick="doDownloadFolder(\'' + escapeAttr(fullpath) + '\', \'deflate\');this.parentElement.parentElement.parentElement.remove();">' +
-                '<i class="fa-solid fa-file-zipper"></i> ZIP 压缩包（体积小）</button>' +
-            '<button class="btn" style="justify-content:center;padding:12px;" onclick="doDownloadFolder(\'' + escapeAttr(fullpath) + '\', \'store\');this.parentElement.parentElement.parentElement.remove();">' +
-                '<i class="fa-solid fa-folder-open"></i> 下载整个文件夹（解压即用）</button>' +
+        '<div style="display:flex;gap:8px;">' +
+            '<button class="btn btn-primary" style="flex:1;justify-content:center;padding:12px;" onclick="doDownloadFolder(\'' + escapeAttr(fullpath) + '\', \'deflate\');this.parentElement.parentElement.parentElement.remove();">' +
+                '<i class="fa-solid fa-file-zipper"></i> ZIP 压缩</button>' +
+            '<button class="btn" style="flex:1;justify-content:center;padding:12px;" onclick="doDownloadFolder(\'' + escapeAttr(fullpath) + '\', \'store\');this.parentElement.parentElement.parentElement.remove();">' +
+                '<i class="fa-solid fa-folder-open"></i> 解压即用</button>' +
         '</div>' +
         '<button class="btn" style="width:100%;margin-top:12px;justify-content:center;" onclick="this.parentElement.parentElement.remove();">取消</button>' +
     '</div>';
