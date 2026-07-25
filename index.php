@@ -1220,11 +1220,18 @@ function renderGridView() {
     // 文件夹卡片
     if (hasFolders) {
         state.folders.forEach(fd => {
-            html += '<div class="grid-card folder-card" onclick="navigateTo(\'' + escapeAttr(fd.fullpath) + '\')" title="' + escapeHtml(fd.name) + '">' +
-                '<div class="grid-thumb" style="position:relative;">' +
+            const sel = state.selectedFolders.has(fd.fullpath);
+            html += '<div class="grid-card folder-card' + (sel ? ' selected' : '') + '" data-folder="' + escapeAttr(fd.fullpath) + '">' +
+                '<div class="grid-thumb" onclick="navigateTo(\'' + escapeAttr(fd.fullpath) + '\')">' +
+                    '<div class="grid-check" onclick="event.stopPropagation();">' +
+                        '<input type="checkbox" ' + (sel ? 'checked' : '') + ' onchange="toggleGridFolderSelect(\'' + escapeAttr(fd.fullpath) + '\', this.checked)">' +
+                    '</div>' +
                     '<i class="fa-solid fa-folder thumb-icon" style="color:#f59e0b;"></i>' +
                 '</div>' +
-                '<div class="grid-info"><div class="grid-name">📁 ' + escapeHtml(fd.name) + '</div></div>' +
+                '<div class="grid-info" onclick="navigateTo(\'' + escapeAttr(fd.fullpath) + '\')">' +
+                    '<div class="grid-name">📁 ' + escapeHtml(fd.name) + '</div>' +
+                    '<div class="grid-meta">' + (fd.file_count || 0) + ' 个文件</div>' +
+                '</div>' +
             '</div>';
         });
     }
@@ -1287,8 +1294,20 @@ function toggleGridSelect(id, checked) {
 }
 
 function toggleGridSelectAll(checked) {
-    if (checked) state.files.forEach(f => state.selectedIds.add(f.id));
-    else state.files.forEach(f => state.selectedIds.delete(f.id));
+    if (checked) {
+        state.files.forEach(f => state.selectedIds.add(f.id));
+        (state.folders || []).forEach(fd => state.selectedFolders.add(fd.fullpath));
+    } else {
+        state.files.forEach(f => state.selectedIds.delete(f.id));
+        state.selectedFolders.clear();
+    }
+    updateDeleteBtn();
+    renderGridView();
+}
+
+function toggleGridFolderSelect(fullpath, checked) {
+    if (checked) state.selectedFolders.add(fullpath);
+    else state.selectedFolders.delete(fullpath);
     updateDeleteBtn();
     renderGridView();
 }
