@@ -1476,10 +1476,34 @@ document.getElementById('btnUpload').addEventListener('click', () => fileInput.c
 // 拖拽上传
 uploadZone.addEventListener('dragover', e => { e.preventDefault(); uploadZone.classList.add('drag-over'); });
 uploadZone.addEventListener('dragleave', () => uploadZone.classList.remove('drag-over'));
-uploadZone.addEventListener('drop', e => {
+uploadZone.addEventListener('drop', async e => {
     e.preventDefault();
     uploadZone.classList.remove('drag-over');
-    handleFiles(e.dataTransfer.files);
+    const items = e.dataTransfer.items;
+    if (items && items.length > 0 && items[0].webkitGetAsEntry) {
+        // 支持文件夹拖拽
+        const allFiles = [];
+        async function traverse(entry, path) {
+            if (entry.isFile) {
+                const file = await new Promise(resolve => entry.file(resolve));
+                file._relativePath = path + file.name;
+                allFiles.push(file);
+            } else if (entry.isDirectory) {
+                const reader = entry.createReader();
+                const entries = await new Promise(resolve => reader.readEntries(resolve));
+                for (const child of entries) {
+                    await traverse(child, path + entry.name + '/');
+                }
+            }
+        }
+        for (const item of items) {
+            const entry = item.webkitGetAsEntry();
+            if (entry) await traverse(entry, '');
+        }
+        handleFiles(allFiles);
+    } else {
+        handleFiles(e.dataTransfer.files);
+    }
 });
 
 fileInput.addEventListener('change', () => {
@@ -1502,8 +1526,8 @@ async function handleFiles(files) {
     const formData = new FormData();
     for (const f of files) {
         formData.append('files[]', f);
-        // 文件夹上传用单独字段传路径
-        formData.append('paths[]', f.webkitRelativePath || '');
+        // 文件夹上传用单独字段传路径（拖拽: _relativePath, 选择器: webkitRelativePath）
+        formData.append('paths[]', f._relativePath || f.webkitRelativePath || '');
     }
 
     const progressBar = document.getElementById('progressBar');
