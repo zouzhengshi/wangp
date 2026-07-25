@@ -1113,8 +1113,12 @@ selectAll.addEventListener('change', () => {
 });
 
 function updateSelectAll() {
-    if (state.files.length === 0) { selectAll.checked = false; return; }
-    selectAll.checked = state.files.length > 0 && state.selectedIds.size === state.files.length;
+    const totalFiles = state.files.length;
+    const totalFolders = (state.folders || []).length;
+    if (totalFiles === 0 && totalFolders === 0) { selectAll.checked = false; return; }
+    const allFilesChecked = totalFiles === 0 || state.selectedIds.size === totalFiles;
+    const allFoldersChecked = totalFolders === 0 || state.selectedFolders.size === totalFolders;
+    selectAll.checked = allFilesChecked && allFoldersChecked;
 }
 
 function updateDeleteBtn() {
