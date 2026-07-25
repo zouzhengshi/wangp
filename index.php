@@ -1113,7 +1113,7 @@ function downloadFolder(fullpath) {
             '<button class="btn btn-primary" style="justify-content:center;padding:12px;" onclick="doDownloadFolder(\'' + escapeAttr(fullpath) + '\', \'deflate\');this.parentElement.parentElement.parentElement.remove();">' +
                 '<i class="fa-solid fa-file-zipper"></i> ZIP 压缩包（体积小）</button>' +
             '<button class="btn" style="justify-content:center;padding:12px;" onclick="doDownloadFolder(\'' + escapeAttr(fullpath) + '\', \'store\');this.parentElement.parentElement.parentElement.remove();">' +
-                '<i class="fa-solid fa-folder-open"></i> 仅打包不压缩（速度快）</button>' +
+                '<i class="fa-solid fa-folder-open"></i> 下载整个文件夹（解压即用）</button>' +
         '</div>' +
         '<button class="btn" style="width:100%;margin-top:12px;justify-content:center;" onclick="this.parentElement.parentElement.remove();">取消</button>' +
     '</div>';
@@ -1122,33 +1122,17 @@ function downloadFolder(fullpath) {
 }
 
 function doDownloadFolder(fullpath, mode) {
-    if (mode === 'store') {
-        // 直接下载：获取所有文件ID，逐个下载
-        fetch('api.php?action=folder_ids&path=' + encodeURIComponent(fullpath))
-            .then(r => r.json())
-            .then(json => {
-                if (json.code === 200 && json.data.ids.length > 0) {
-                    toast('开始下载 ' + json.data.ids.length + ' 个文件...', 'info');
-                    json.data.ids.forEach((id, i) => {
-                        setTimeout(() => { window.open('download.php?id=' + id, '_blank'); }, i * 300);
-                    });
-                } else {
-                    toast('文件夹为空', 'error');
-                }
-            })
-            .catch(() => toast('获取文件列表失败', 'error'));
-        return;
-    }
-    // ZIP 下载
     const form = document.createElement('form');
     form.method = 'POST';
     form.action = 'batch_download.php';
     form.target = '_blank';
-    const input = document.createElement('input');
-    input.type = 'hidden';
-    input.name = 'folder_path';
-    input.value = fullpath;
-    form.appendChild(input);
+    ['folder_path', 'mode'].forEach(name => {
+        const input = document.createElement('input');
+        input.type = 'hidden';
+        input.name = name;
+        input.value = name === 'folder_path' ? fullpath : mode;
+        form.appendChild(input);
+    });
     document.body.appendChild(form);
     form.submit();
     document.body.removeChild(form);
