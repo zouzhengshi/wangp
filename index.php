@@ -466,7 +466,7 @@ try {
                 align-items: center;
                 gap: 8px;
             }
-            td:first-of-type { display: none; } /* 隐藏多余的 checkbox 列 td */
+            tbody tr:not(.folder-row) td:first-of-type { display: none; } /* 文件行隐藏多余checkbox列 */
             td:nth-of-type(2) { /* 图标 + 文件名放一起 */ }
             .file-icon { width: 28px; height: 28px; font-size: 16px; margin-right: 4px; }
             .file-name { max-width: none; white-space: normal; word-break: break-all; font-size: 14px; }
