@@ -200,12 +200,12 @@ try {
             </div>
             <div class="form-group">
                 <label>上传大小限制（MB）</label>
-                <input type="range" id="sizeRange" min="1" max="2048" value="<?php echo $maxSizeMB; ?>"
+                <input type="range" id="sizeRange" min="1" max="10240" value="<?php echo $maxSizeMB; ?>"
                        oninput="document.getElementById('sizeVal').value = this.value;
                                 document.getElementById('sizeLabel').textContent = this.value + ' MB';">
                 <div style="display:flex;align-items:center;gap:8px;margin-top:4px;">
                     <input type="number" id="sizeVal" name="max_file_size"
-                           value="<?php echo $maxSizeMB; ?>" min="1" max="2048"
+                           value="<?php echo $maxSizeMB; ?>" min="1" max="10240"
                            style="width:100px;padding:6px 10px;border:1px solid #e2e8f0;border-radius:8px;font-size:13px;font-family:inherit;"
                            oninput="document.getElementById('sizeRange').value = this.value;
                                     document.getElementById('sizeLabel').textContent = this.value + ' MB';">
