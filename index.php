@@ -1122,17 +1122,33 @@ function downloadFolder(fullpath) {
 }
 
 function doDownloadFolder(fullpath, mode) {
+    if (mode === 'store') {
+        // 直接下载：获取所有文件ID，逐个下载
+        fetch('api.php?action=folder_ids&path=' + encodeURIComponent(fullpath))
+            .then(r => r.json())
+            .then(json => {
+                if (json.code === 200 && json.data.ids.length > 0) {
+                    toast('开始下载 ' + json.data.ids.length + ' 个文件...', 'info');
+                    json.data.ids.forEach((id, i) => {
+                        setTimeout(() => { window.open('download.php?id=' + id, '_blank'); }, i * 300);
+                    });
+                } else {
+                    toast('文件夹为空', 'error');
+                }
+            })
+            .catch(() => toast('获取文件列表失败', 'error'));
+        return;
+    }
+    // ZIP 下载
     const form = document.createElement('form');
     form.method = 'POST';
     form.action = 'batch_download.php';
     form.target = '_blank';
-    ['folder_path', 'mode'].forEach(name => {
-        const input = document.createElement('input');
-        input.type = 'hidden';
-        input.name = name;
-        input.value = name === 'folder_path' ? fullpath : mode;
-        form.appendChild(input);
-    });
+    const input = document.createElement('input');
+    input.type = 'hidden';
+    input.name = 'folder_path';
+    input.value = fullpath;
+    form.appendChild(input);
     document.body.appendChild(form);
     form.submit();
     document.body.removeChild(form);

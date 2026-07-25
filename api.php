@@ -29,6 +29,14 @@ try {
         ]);
     }
 
+    if ($action === 'folder_ids') {
+        $fp = trim($_GET['path'] ?? '');
+        $ids = $db->prepare("SELECT `id` FROM `files` WHERE `filepath` LIKE :fp")
+                  ->execute([':fp' => $fp . '%'])
+                  ->fetchAll(PDO::FETCH_COLUMN);
+        jsonResponse(200, 'ok', ['ids' => array_map('intval', $ids)]);
+    }
+
     // 文件列表（默认）
     $page     = max(1, (int) ($_GET['page'] ?? 1));
     $perPage  = min(100, max(10, (int) ($_GET['per_page'] ?? 20)));
