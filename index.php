@@ -1103,15 +1103,36 @@ async function deleteFolder(fullpath) {
 
 // === 下载文件夹 ===
 function downloadFolder(fullpath) {
+    const name = fullpath.replace(/\/$/, '').split('/').pop() || 'download';
+    const overlay = document.createElement('div');
+    overlay.className = 'preview-overlay';
+    overlay.innerHTML = '<div class="modal" style="background:#fff;cursor:default;text-align:left;max-width:360px;" onclick="event.stopPropagation();">' +
+        '<h3 style="margin-bottom:6px;">📦 下载文件夹</h3>' +
+        '<p style="color:#64748b;font-size:13px;margin-bottom:16px;">' + escapeHtml(name) + '</p>' +
+        '<div style="display:flex;flex-direction:column;gap:8px;">' +
+            '<button class="btn btn-primary" style="justify-content:center;padding:12px;" onclick="doDownloadFolder(\'' + escapeAttr(fullpath) + '\', \'deflate\');this.parentElement.parentElement.parentElement.remove();">' +
+                '<i class="fa-solid fa-file-zipper"></i> ZIP 压缩包（体积小）</button>' +
+            '<button class="btn" style="justify-content:center;padding:12px;" onclick="doDownloadFolder(\'' + escapeAttr(fullpath) + '\', \'store\');this.parentElement.parentElement.parentElement.remove();">' +
+                '<i class="fa-solid fa-folder-open"></i> 仅打包不压缩（速度快）</button>' +
+        '</div>' +
+        '<button class="btn" style="width:100%;margin-top:12px;justify-content:center;" onclick="this.parentElement.parentElement.remove();">取消</button>' +
+    '</div>';
+    overlay.addEventListener('click', () => overlay.remove());
+    document.body.appendChild(overlay);
+}
+
+function doDownloadFolder(fullpath, mode) {
     const form = document.createElement('form');
     form.method = 'POST';
     form.action = 'batch_download.php';
     form.target = '_blank';
-    const input = document.createElement('input');
-    input.type = 'hidden';
-    input.name = 'folder_path';
-    input.value = fullpath;
-    form.appendChild(input);
+    ['folder_path', 'mode'].forEach(name => {
+        const input = document.createElement('input');
+        input.type = 'hidden';
+        input.name = name;
+        input.value = name === 'folder_path' ? fullpath : mode;
+        form.appendChild(input);
+    });
     document.body.appendChild(form);
     form.submit();
     document.body.removeChild(form);

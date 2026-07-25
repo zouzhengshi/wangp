@@ -41,7 +41,9 @@ if ($folderPath !== '') {
         $zipPath = sys_get_temp_dir() . '/' . uniqid('folder_') . '.zip';
 
         $zip = new ZipArchive();
-        if ($zip->open($zipPath, ZipArchive::CREATE | ZipArchive::OVERWRITE) !== true) {
+        $flags = ZipArchive::CREATE | ZipArchive::OVERWRITE;
+        $mode = ($_POST['mode'] ?? 'deflate') === 'store' ? 'store' : 'deflate';
+        if ($zip->open($zipPath, $flags) !== true) {
             jsonResponse(500, '无法创建压缩包');
         }
 
@@ -50,6 +52,11 @@ if ($folderPath !== '') {
             if (file_exists($fp)) {
                 $innerName = $file['filepath'] . $file['filename'];
                 $zip->addFile($fp, $innerName);
+            }
+        }
+        if ($mode === 'store') {
+            for ($i = 0; $i < $zip->numFiles; $i++) {
+                $zip->setCompressionIndex($i, ZipArchive::CM_STORE);
             }
         }
         $zip->close();
