@@ -292,23 +292,6 @@ try {
             .grid-view .grid-info { padding: 6px 8px; }
         }
 
-        /* 文件夹导航栏 */
-        .folder-bar {
-            display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 14px;
-        }
-        .folder-card-mini {
-            display: flex; align-items: center; gap: 8px;
-            padding: 10px 16px; background: #fffbeb; border: 1px solid #fde68a;
-            border-radius: 10px; cursor: pointer; transition: all 0.15s;
-            font-size: 13px; font-weight: 500; color: #92400e; min-width: 120px;
-        }
-        .folder-card-mini:hover {
-            background: #fef3c7; border-color: #f59e0b; transform: translateY(-1px);
-            box-shadow: 0 2px 8px rgba(245,158,11,.15);
-        }
-        .folder-card-mini i { font-size: 20px; color: #f59e0b; }
-        .folder-card-mini .fc-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-
         .ext-filter {
             display: flex;
             gap: 4px;
@@ -735,9 +718,6 @@ try {
         <!-- 动态生成 -->
     </div>
 
-    <!-- 文件夹导航栏 -->
-    <div class="folder-bar" id="folderBar"></div>
-
     <!-- 面包屑导航 -->
     <div class="breadcrumbs" id="breadcrumbs" style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:12px;font-size:13px;"></div>
 
@@ -859,7 +839,6 @@ async function loadFiles() {
             state.total = json.data.total;
             state.totalPages = json.data.total_pages;
             state.currentPath = json.data.current_path || '';
-            renderFolderBar();
             renderBreadcrumbs();
             renderTable();
             renderPagination();
@@ -944,21 +923,6 @@ function goUp() {
     const parts = state.currentPath.replace(/\/$/, '').split('/');
     parts.pop();
     navigateTo(parts.length > 0 ? parts.join('/') + '/' : '');
-}
-
-function renderFolderBar() {
-    const bar = document.getElementById('folderBar');
-    if (!state.folders || state.folders.length === 0) {
-        bar.innerHTML = '';
-        return;
-    }
-    bar.innerHTML = state.folders.map(fd =>
-        '<div class="folder-card-mini" onclick="navigateTo(\'' + escapeAttr(fd.fullpath) + '\')">' +
-            '<i class="fa-solid fa-folder"></i>' +
-            '<span class="fc-name" title="' + escapeHtml(fd.name) + '">' + escapeHtml(fd.name) + '</span>' +
-            '<span style="font-size:11px;color:#a16207;">' + (fd.file_count || 0) + '个</span>' +
-        '</div>'
-    ).join('');
 }
 
 // === 视图切换 ===
