@@ -785,6 +785,7 @@ let state = {
     search: '',
     ext: '',
     selectedIds: new Set(),
+    selectedFolders: new Set(),
     allowDownload: <?php echo isDownloadAllowed() ? 'true' : 'false'; ?>,
     currentPath: '',
     viewMode: localStorage.getItem('viewMode') || 'list',
@@ -914,6 +915,7 @@ function navigateTo(path) {
     state.currentPath = path;
     state.page = 1;
     state.selectedIds.clear();
+    state.selectedFolders.clear();
     state.ext = '';
     loadFiles();
     updateStats();
@@ -968,8 +970,8 @@ function renderTable() {
     // 渲染子文件夹
     if (hasFolders) {
         state.folders.forEach(fd => {
-            rows += `<tr class="folder-row" data-path="${escapeAttr(fd.fullpath)}">
-                <td class="check-col"></td>
+            rows += `<tr class="folder-row" data-folder="${escapeAttr(fd.fullpath)}">
+                <td class="check-col"><input type="checkbox" class="row-checkbox folder-check" data-folder="${escapeAttr(fd.fullpath)}" ${state.selectedFolders && state.selectedFolders.has(fd.fullpath) ? 'checked' : ''}></td>
                 <td><div class="file-icon"><i class="fa-solid fa-folder" style="color:#f59e0b;"></i></div></td>
                 <td>
                     <div class="file-name" style="cursor:pointer;color:#4f46e5;" onclick="navigateTo('${escapeAttr(fd.fullpath)}')" title="${escapeHtml(fd.name)}">
@@ -1065,6 +1067,14 @@ function bindRowEvents() {
             e.preventDefault();
             deleteFile(parseInt(e.currentTarget.dataset.id));
         });
+
+        // 文件夹勾选
+        row.querySelector('.folder-check')?.addEventListener('change', e => {
+            const fp = e.target.dataset.folder;
+            if (e.target.checked) state.selectedFolders.add(fp);
+            else state.selectedFolders.delete(fp);
+            updateDeleteBtn();
+        });
     });
 }
 
@@ -1094,8 +1104,10 @@ async function deleteFolder(fullpath) {
 selectAll.addEventListener('change', () => {
     if (selectAll.checked) {
         state.files.forEach(f => state.selectedIds.add(f.id));
+        state.folders.forEach(fd => state.selectedFolders.add(fd.fullpath));
     } else {
         state.selectedIds.clear();
+        state.selectedFolders.clear();
     }
     renderTable();
 });
@@ -1106,8 +1118,9 @@ function updateSelectAll() {
 }
 
 function updateDeleteBtn() {
-    btnDeleteSelected.style.display = state.selectedIds.size > 0 ? '' : 'none';
-    btnDeleteSelected.innerHTML = `<i class="fa-solid fa-trash"></i> 删除选中 (${state.selectedIds.size})`;
+    const total = state.selectedIds.size + state.selectedFolders.size;
+    btnDeleteSelected.style.display = total > 0 ? '' : 'none';
+    btnDeleteSelected.innerHTML = `<i class="fa-solid fa-trash"></i> 删除选中 (${total})`;
 }
 
 // === 网格视图 ===
@@ -1271,28 +1284,37 @@ function deleteFile(id) {
 }
 
 btnDeleteSelected.addEventListener('click', () => {
-    showDeleteModal([...state.selectedIds]);
+    showDeleteModal([...state.selectedIds], [...state.selectedFolders]);
 });
 
-function showDeleteModal(ids) {
+function showDeleteModal(ids, folders) {
+    folders = folders || [];
+    const total = ids.length + folders.length;
     document.getElementById('deleteModal').style.display = '';
-    document.getElementById('deleteModalText').textContent = `确定要删除 ${ids.length} 个文件吗？此操作不可恢复。`;
+    document.getElementById('deleteModalText').textContent = `确定要删除 ${total} 个项目吗？此操作不可恢复。`;
     document.getElementById('btnConfirmDelete').onclick = async () => {
         try {
-            const res = await fetch('delete.php', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ ids }),
-            });
-            const json = await res.json();
-            if (json.code === 200) {
-                toast(`已删除 ${json.data.deleted_count} 个文件`, 'success');
-                ids.forEach(id => state.selectedIds.delete(id));
-                loadFiles();
-                updateStats();
-            } else {
-                toast(json.msg, 'error');
+            // 先删除文件夹
+            for (const fp of folders) {
+                await fetch('delete.php', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ folder_path: fp }),
+                });
             }
+            // 再删除文件
+            if (ids.length > 0) {
+                await fetch('delete.php', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ ids }),
+                });
+            }
+            toast(`已删除 ${total} 个项目`, 'success');
+            state.selectedIds.clear();
+            state.selectedFolders.clear();
+            loadFiles();
+            updateStats();
         } catch (e) {
             toast('删除失败', 'error');
         }
