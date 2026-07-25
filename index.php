@@ -449,7 +449,7 @@ try {
                 border-radius: var(--radius);
                 box-shadow: var(--shadow);
                 margin-bottom: 10px;
-                padding: 12px 12px 12px 42px; /* 左侧留空给checkbox */
+                padding: 12px 42px 12px 12px; /* 右侧留空给checkbox */
                 position: relative;
                 border: 1px solid var(--border);
             }
@@ -460,7 +460,8 @@ try {
             .check-col {
                 position: absolute;
                 top: 14px;
-                left: 10px;
+                right: 10px;
+                left: auto;
                 width: auto;
                 z-index: 2;
                 display: block !important;
