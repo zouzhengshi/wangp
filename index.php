@@ -913,10 +913,13 @@ function renderExtFilter(exts) {
 // === 面包屑导航 ===
 function renderBreadcrumbs() {
     const container = document.getElementById('breadcrumbs');
+    if (state.currentPath === '') {
+        container.innerHTML = '';
+        return;
+    }
     let html = '<span class="btn" onclick="navigateTo(\'\')" style="cursor:pointer;"><i class="fa-solid fa-home"></i> 根目录</span>';
-    if (state.currentPath !== '') {
-        const parts = state.currentPath.replace(/\/$/, '').split('/');
-        let accumulated = '';
+    const parts = state.currentPath.replace(/\/$/, '').split('/');
+    let accumulated = '';
         parts.forEach((part, i) => {
             accumulated += part + '/';
             html += '<i class="fa-solid fa-chevron-right" style="color:#94a3b8;font-size:10px;"></i>';
@@ -926,7 +929,6 @@ function renderBreadcrumbs() {
                 html += '<span class="btn" onclick="navigateTo(\'' + escapeAttr(accumulated) + '\')" style="cursor:pointer;">' + escapeHtml(part) + '</span>';
             }
         });
-    }
     container.innerHTML = html;
 }
 function navigateTo(path) {
