@@ -20,7 +20,7 @@ try {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>文件管理系统</title>
+    <title><?php echo htmlspecialchars(getSetting('site_name', '文件管理系统')); ?></title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         :root {
@@ -645,7 +645,7 @@ try {
 <!-- 顶部 -->
 <header class="header">
     <a href="index.php" class="header-brand">
-        <i class="fa-solid fa-cloud-arrow-up"></i> 文件管理系统
+        <i class="fa-solid fa-cloud-arrow-up"></i> <?php echo htmlspecialchars(getSetting('site_name', '文件管理系统')); ?>
     </a>
     <div style="display:flex;align-items:center;gap:16px;">
         <div class="header-stats">
