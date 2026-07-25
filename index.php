@@ -482,8 +482,12 @@ try {
             tbody tr.folder-row .file-name { margin-left: 0; }
 
             /* 卡片内操作按钮 */
-            .actions { margin-top: 6px; justify-content: flex-end; border-top: 1px solid var(--border); padding-top: 8px; }
-            .actions .btn { padding: 6px 14px; font-size: 13px; }
+            .actions {
+                position: absolute; bottom: 10px; right: 10px;
+                display: flex; gap: 4px; z-index: 2;
+                margin: 0; border: none; padding: 0;
+            }
+            .actions .btn { padding: 4px 10px; font-size: 12px; }
 
             /* Toast */
             .toast-container { top: 60px; right: 8px; left: 8px; }
