@@ -50,14 +50,22 @@ try {
     // 构建查询
     $where = [];
     $params = [];
+    $isSearching = $search !== '';
 
-    // 路径筛选：精确匹配当前目录
-    $where[] = '`filepath` = :filepath';
-    $params[':filepath'] = $path;
+    // 路径筛选：搜索时搜索子目录，否则精确匹配当前目录
+    if ($isSearching) {
+        $where[] = '`filepath` LIKE :filepath';
+        $params[':filepath'] = $path . '%';
+    } else {
+        $where[] = '`filepath` = :filepath';
+        $params[':filepath'] = $path;
+    }
 
-    if ($search !== '') {
-        $where[] = '`filename` LIKE :search';
+    if ($isSearching) {
+        // 搜索：匹配文件名或文件夹路径
+        $where[] = '(`filename` LIKE :search OR `filepath` LIKE :search2)';
         $params[':search'] = '%' . $search . '%';
+        $params[':search2'] = '%' . $search . '%';
     }
     if ($ext !== '') {
         $where[] = '`file_ext` = :ext';
