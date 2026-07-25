@@ -476,7 +476,7 @@ try {
             tbody tr td:first-of-type { display: none; } /* 隐藏所有行的第一个td，改为绝对定位 */
             .file-icon { width: 28px; height: 28px; font-size: 16px; margin-right: 4px; }
             .file-name { max-width: none; white-space: normal; word-break: break-all; font-size: 14px; }
-            .file-meta { font-size: 11px; }
+            .file-meta { font-size: 11px; display: inline-block !important; width: auto; margin-right: 10px; }
             .file-ext { font-size: 10px; padding: 1px 6px; }
             tbody tr.folder-row .file-name { margin-left: 0; }
 
@@ -949,6 +949,7 @@ document.querySelectorAll('.view-btn').forEach(btn => {
 // === 渲染表格 ===
 function renderTable() {
     if (state.viewMode === 'grid') {
+        document.getElementById('mobileSelectBar').style.display = 'none';
         document.getElementById('listTable').style.display = 'none';
         document.getElementById('gridSelectBar').style.display = '';
         document.getElementById('fileGridView').style.display = '';
