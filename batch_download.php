@@ -16,6 +16,56 @@ if (!isDownloadAllowed()) {
 
 // 支持 JSON POST 和 form POST
 $input = json_decode(file_get_contents('php://input'), true);
+
+// 按文件夹路径下载
+$folderPath = '';
+if ($input && isset($input['folder_path'])) {
+    $folderPath = $input['folder_path'];
+} elseif (isset($_POST['folder_path'])) {
+    $folderPath = $_POST['folder_path'];
+}
+
+if ($folderPath !== '') {
+    try {
+        $db = getDB();
+        $stmt = $db->prepare("SELECT * FROM `files` WHERE `filepath` LIKE :fp");
+        $stmt->execute([':fp' => $folderPath . '%']);
+        $files = $stmt->fetchAll();
+
+        if (empty($files)) {
+            jsonResponse(404, '文件夹为空或不存在');
+        }
+
+        $zipName = rtrim(basename($folderPath), '/') . '.zip';
+        if ($zipName === '.zip') $zipName = 'download_' . date('Ymd_His') . '.zip';
+        $zipPath = sys_get_temp_dir() . '/' . uniqid('folder_') . '.zip';
+
+        $zip = new ZipArchive();
+        if ($zip->open($zipPath, ZipArchive::CREATE | ZipArchive::OVERWRITE) !== true) {
+            jsonResponse(500, '无法创建压缩包');
+        }
+
+        foreach ($files as $file) {
+            $fp = UPLOAD_DIR . basename($file['stored_name']);
+            if (file_exists($fp)) {
+                $innerName = $file['filepath'] . $file['filename'];
+                $zip->addFile($fp, $innerName);
+            }
+        }
+        $zip->close();
+
+        header('Content-Type: application/zip');
+        header('Content-Disposition: attachment; filename="' . rawurlencode($zipName) . '"');
+        header('Content-Length: ' . filesize($zipPath));
+        readfile($zipPath);
+        unlink($zipPath);
+        exit;
+    } catch (PDOException $e) {
+        jsonResponse(500, '数据库错误');
+    }
+}
+
+// 按文件 ID 下载
 if ($input && isset($input['ids'])) {
     $ids = array_map('intval', $input['ids']);
 } else {

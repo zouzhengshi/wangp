@@ -984,6 +984,7 @@ function renderTable() {
                 <td class="file-meta">${fd.file_count || 0} 文件</td>
                 <td>
                     <div class="actions">
+                        <button class="btn" onclick="downloadFolder('${escapeAttr(fd.fullpath)}')" title="下载文件夹"><i class="fa-solid fa-download"></i></button>
                         <button class="btn btn-danger" onclick="deleteFolder('${escapeAttr(fd.fullpath)}')" title="删除文件夹"><i class="fa-solid fa-trash"></i></button>
                     </div>
                 </td>
@@ -1098,6 +1099,22 @@ async function deleteFolder(fullpath) {
     } catch (e) {
         toast('删除失败', 'error');
     }
+}
+
+// === 下载文件夹 ===
+function downloadFolder(fullpath) {
+    const form = document.createElement('form');
+    form.method = 'POST';
+    form.action = 'batch_download.php';
+    form.target = '_blank';
+    const input = document.createElement('input');
+    input.type = 'hidden';
+    input.name = 'folder_path';
+    input.value = fullpath;
+    form.appendChild(input);
+    document.body.appendChild(form);
+    form.submit();
+    document.body.removeChild(form);
 }
 
 // === 全选 ===
