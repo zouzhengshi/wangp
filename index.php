@@ -1111,24 +1111,41 @@ function bindRowEvents() {
 
 // === 删除文件夹 ===
 async function deleteFolder(fullpath) {
-    if (!confirm('确定删除文件夹 "' + fullpath + '" 及其所有文件？此操作不可恢复。')) return;
-    try {
-        const res = await fetch('delete.php', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ folder_path: fullpath }),
-        });
-        const json = await res.json();
-        if (json.code === 200) {
-            toast('文件夹已删除', 'success');
-            loadFiles();
-            updateStats();
-        } else {
-            toast(json.msg, 'error');
+    const overlay = document.createElement('div');
+    overlay.className = 'preview-overlay';
+    overlay.innerHTML = '<div class="modal" style="background:#fff;" onclick="event.stopPropagation();">' +
+        '<i class="fa-solid fa-triangle-exclamation" style="font-size:40px;color:#ef4444;display:block;margin-bottom:12px;"></i>' +
+        '<h3>确认删除文件夹</h3>' +
+        '<p>确定要删除此文件夹及其所有文件吗？此操作不可恢复。</p>' +
+        '<div class="btn-group">' +
+            '<button class="btn" id="cancelDelFolder">取消</button>' +
+            '<button class="btn btn-danger" id="confirmDelFolder">确认删除</button>' +
+        '</div>' +
+    '</div>';
+    overlay.addEventListener('click', e => { if (e.target === overlay) overlay.remove(); });
+    document.body.appendChild(overlay);
+
+    overlay.querySelector('#cancelDelFolder').onclick = () => overlay.remove();
+    overlay.querySelector('#confirmDelFolder').onclick = async () => {
+        overlay.remove();
+        try {
+            const res = await fetch('delete.php', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ folder_path: fullpath }),
+            });
+            const json = await res.json();
+            if (json.code === 200) {
+                toast('文件夹已删除', 'success');
+                loadFiles();
+                updateStats();
+            } else {
+                toast(json.msg, 'error');
+            }
+        } catch (e) {
+            toast('删除失败', 'error');
         }
-    } catch (e) {
-        toast('删除失败', 'error');
-    }
+    };
 }
 
 // === 下载文件夹 ===
