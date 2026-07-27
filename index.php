@@ -718,6 +718,9 @@ try {
         <button class="btn" id="btnRefresh">
             <i class="fa-solid fa-rotate"></i> 刷新
         </button>
+        <button class="btn" id="btnNewFolder" title="新建文件夹">
+            <i class="fa-solid fa-folder-plus"></i>
+        </button>
         <span style="margin-left:auto;display:flex;gap:2px;background:#f1f5f9;border-radius:8px;padding:2px;" id="viewToggle">
             <span class="view-btn active" data-view="list" title="列表视图"><i class="fa-solid fa-list"></i></span>
             <span class="view-btn" data-view="grid" title="网格视图"><i class="fa-solid fa-table-cells"></i></span>
@@ -1614,6 +1617,25 @@ function previewFile(id, filename, ext) {
 
 // === 刷新 ===
 document.getElementById('btnRefresh').addEventListener('click', () => loadFiles());
+
+// === 新建文件夹 ===
+document.getElementById('btnNewFolder').addEventListener('click', () => {
+    const name = prompt('请输入文件夹名称:');
+    if (!name || !name.trim()) return;
+    fetch('mkdir.php', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: name.trim(), path: state.currentPath }),
+    }).then(r => r.json()).then(json => {
+        if (json.code === 200) {
+            toast('文件夹已创建', 'success');
+            loadFiles();
+            updateStats();
+        } else {
+            toast(json.msg, 'error');
+        }
+    }).catch(() => toast('创建失败', 'error'));
+});
 
 // === 关闭右键菜单 ===
 document.addEventListener('click', () => hideContextMenu());
