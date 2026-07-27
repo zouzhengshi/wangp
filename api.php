@@ -60,6 +60,9 @@ try {
     $params = [];
     $isSearching = $search !== '';
 
+    // 排除占位文件
+    $where[] = "`file_ext` != 'folder'";
+
     // 路径筛选：搜索时搜索子目录，否则精确匹配当前目录
     if ($isSearching) {
         $where[] = '`filepath` LIKE :filepath';

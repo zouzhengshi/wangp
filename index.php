@@ -1620,21 +1620,38 @@ document.getElementById('btnRefresh').addEventListener('click', () => loadFiles(
 
 // === 新建文件夹 ===
 document.getElementById('btnNewFolder').addEventListener('click', () => {
-    const name = prompt('请输入文件夹名称:');
-    if (!name || !name.trim()) return;
-    fetch('mkdir.php', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name: name.trim(), path: state.currentPath }),
-    }).then(r => r.json()).then(json => {
-        if (json.code === 200) {
-            toast('文件夹已创建', 'success');
-            loadFiles();
-            updateStats();
-        } else {
-            toast(json.msg, 'error');
-        }
-    }).catch(() => toast('创建失败', 'error'));
+    const overlay = document.createElement('div');
+    overlay.className = 'preview-overlay';
+    overlay.innerHTML = '<div class="modal" style="background:#fff;cursor:default;text-align:left;max-width:340px;" onclick="event.stopPropagation();">' +
+        '<h3 style="margin-bottom:12px;">📁 新建文件夹</h3>' +
+        '<input id="newFolderName" type="text" placeholder="输入文件夹名称" style="width:100%;padding:10px 12px;border:1px solid #e2e8f0;border-radius:8px;font-size:14px;outline:none;font-family:inherit;" onkeydown="if(event.key===\'Enter\')this.parentElement.querySelector(\'.btn-confirm\').click();">' +
+        '<div style="display:flex;gap:8px;margin-top:14px;">' +
+            '<button class="btn btn-primary btn-confirm" style="flex:1;justify-content:center;">创建</button>' +
+            '<button class="btn" style="flex:1;justify-content:center;" onclick="this.closest(\'.preview-overlay\').remove();">取消</button>' +
+        '</div>' +
+    '</div>';
+    overlay.addEventListener('click', e => { if (e.target === overlay) overlay.remove(); });
+    document.body.appendChild(overlay);
+    setTimeout(() => overlay.querySelector('#newFolderName').focus(), 100);
+
+    overlay.querySelector('.btn-confirm').addEventListener('click', () => {
+        const name = overlay.querySelector('#newFolderName').value.trim();
+        if (!name) return;
+        overlay.remove();
+        fetch('mkdir.php', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ name: name, path: state.currentPath }),
+        }).then(r => r.json()).then(json => {
+            if (json.code === 200) {
+                toast('文件夹已创建', 'success');
+                loadFiles();
+                updateStats();
+            } else {
+                toast(json.msg, 'error');
+            }
+        }).catch(() => toast('创建失败', 'error'));
+    });
 });
 
 // === 关闭右键菜单 ===
