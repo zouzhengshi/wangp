@@ -828,6 +828,8 @@ function toast(msg, type = 'info') {
 
 // === 加载文件列表 ===
 let loadFilesAborter = null;
+const fileCache = new Map();
+function clearFileCache() { fileCache.clear(); }
 async function loadFiles() {
     // 取消上一次未完成的请求
     if (loadFilesAborter) loadFilesAborter.abort();
@@ -847,6 +849,14 @@ async function loadFiles() {
         ext: state.ext,
         path: state.currentPath,
     });
+    const cacheKey = params.toString();
+    if (fileCache.has(cacheKey)) {
+        const c = fileCache.get(cacheKey);
+        state.files = c.files; state.folders = c.folders; state.total = c.total;
+        state.totalPages = c.totalPages; state.currentPath = c.currentPath;
+        renderBreadcrumbs(); renderTable(); renderPagination();
+        return;
+    }
     try {
         const res = await fetch('api.php?' + params.toString(), { signal: loadFilesAborter.signal });
         const json = await res.json();
@@ -856,6 +866,11 @@ async function loadFiles() {
             state.total = json.data.total;
             state.totalPages = json.data.total_pages;
             state.currentPath = json.data.current_path || '';
+            fileCache.set(cacheKey, {
+                files: json.data.files, folders: json.data.folders || [],
+                total: json.data.total, totalPages: json.data.total_pages,
+                currentPath: json.data.current_path || '',
+            });
             renderBreadcrumbs();
             renderTable();
             renderPagination();
@@ -1401,6 +1416,7 @@ function showDeleteModal(ids, folders) {
             toast(`已删除 ${total} 个项目`, 'success');
             state.selectedIds.clear();
             state.selectedFolders.clear();
+            clearFileCache();
             loadFiles();
             updateStats();
         } catch (e) {
@@ -1550,6 +1566,7 @@ async function handleFiles(files) {
             const errors = result.data.errors || [];
             if (uploaded.length > 0) toast(`成功上传 ${uploaded.length} 个文件`, 'success');
             if (errors.length > 0) errors.forEach(e => toast(e, 'error'));
+            clearFileCache();
             loadFiles();
             updateStats();
         } else {
@@ -1629,6 +1646,7 @@ document.getElementById('btnNewFolder').addEventListener('click', () => {
         }).then(r => r.json()).then(json => {
             if (json.code === 200) {
                 toast('文件夹已创建', 'success');
+                clearFileCache();
                 loadFiles();
                 updateStats();
             } else {
