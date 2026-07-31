@@ -89,18 +89,15 @@ try {
     $countStmt->execute($params);
     $total = (int) $countStmt->fetchColumn();
 
-    // 分页数据
-    $offset = ($page - 1) * $perPage;
+    // 分页数据（查全部，PHP端分页，保证文件夹也计入分页）
     $dataStmt = $db->prepare(
-        "SELECT * FROM `files` $whereClause ORDER BY `$sort` $order LIMIT :limit OFFSET :offset"
+        "SELECT * FROM `files` $whereClause ORDER BY `$sort` $order"
     );
     foreach ($params as $key => $val) {
         $dataStmt->bindValue($key, $val);
     }
-    $dataStmt->bindValue(':limit', $perPage, PDO::PARAM_INT);
-    $dataStmt->bindValue(':offset', $offset, PDO::PARAM_INT);
     $dataStmt->execute();
-    $files = $dataStmt->fetchAll();
+    $allFiles = $dataStmt->fetchAll();
 
     // 格式化
     $files = array_map(function ($f) {
@@ -116,7 +113,7 @@ try {
             'download_count' => (int) $f['download_count'],
             'icon'           => getFileIcon($f['file_ext']),
         ];
-    }, $files);
+    }, $allFiles);
 
     // 查询子文件夹（PHP 提取，兼容性更好）
     $folders = [];
@@ -159,13 +156,31 @@ try {
         }
     }
 
+    // 合并文件夹+文件统一分页（文件夹在前）
+    $items = array_merge($folders, $files);
+    $total = count($items);
+    $totalPages = max(1, ceil($total / $perPage));
+    $page = min($page, $totalPages);
+    $items = array_slice($items, ($page - 1) * $perPage, $perPage);
+
+    // 分离
+    $pageFolders = [];
+    $pageFiles = [];
+    foreach ($items as $item) {
+        if (isset($item['fullpath'])) {
+            $pageFolders[] = $item;
+        } else {
+            $pageFiles[] = $item;
+        }
+    }
+
     jsonResponse(200, 'ok', [
-        'files'       => $files,
-        'folders'     => $folders,
+        'files'       => $pageFiles,
+        'folders'     => $pageFolders,
         'total'       => $total,
         'page'        => $page,
         'per_page'    => $perPage,
-        'total_pages' => ceil($total / $perPage),
+        'total_pages' => $totalPages,
         'current_path'=> $path,
     ]);
 
