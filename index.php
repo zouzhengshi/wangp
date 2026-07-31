@@ -840,7 +840,7 @@ async function loadFiles() {
     const params = new URLSearchParams({
         action: 'list',
         page: state.page,
-        per_page: state.perPage,
+        per_page: state.viewMode === 'grid' ? 500 : state.perPage,
         sort: state.sort,
         order: state.order,
         search: state.search,
@@ -1415,6 +1415,7 @@ function showDeleteModal(ids, folders) {
 
 // === 分页 ===
 function renderPagination() {
+    if (state.viewMode === 'grid') { document.getElementById('pagination').innerHTML = ''; return; }
     const container = document.getElementById('pagination');
     if (state.totalPages <= 1) { container.innerHTML = ''; return; }
     let html = '';
