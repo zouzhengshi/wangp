@@ -1,0 +1,74 @@
+        * { margin:0; padding:0; box-sizing:border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Microsoft YaHei', sans-serif;
+            background: #f0f2f5; color: #1e293b; min-height: 100vh;
+        }
+        .header {
+            background: #fff; border-bottom: 1px solid #e2e8f0; padding: 0 24px;
+            height: 56px; display: flex; align-items: center; justify-content: space-between;
+        }
+        .header h2 { font-size: 16px; color: #4f46e5; }
+        .header-right { display: flex; align-items: center; gap: 16px; font-size: 13px; }
+        .header-right a { color: #64748b; text-decoration: none; }
+        .header-right a:hover { color: #4f46e5; }
+        .header-right .logout { color: #ef4444; }
+        .container { max-width: 800px; margin: 24px auto; padding: 0 16px; }
+        .card {
+            background: #fff; border-radius: 12px; box-shadow: 0 1px 3px rgba(0,0,0,.06);
+            padding: 24px; margin-bottom: 20px;
+        }
+        .card h3 { font-size: 15px; margin-bottom: 18px; color: #334155; display: flex; align-items: center; gap: 8px; }
+        .alert { padding: 10px 14px; border-radius: 8px; font-size: 13px; margin-bottom: 16px; }
+        .alert-success { background: #f0fdf4; color: #16a34a; border: 1px solid #bbf7d0; }
+        .alert-error { background: #fef2f2; color: #dc2626; border: 1px solid #fecaca; }
+        .form-group { margin-bottom: 16px; }
+        .form-group label { display: block; font-size: 13px; font-weight: 600; color: #475569; margin-bottom: 6px; }
+        .form-group input[type="text"],
+        .form-group input[type="number"],
+        .form-group input[type="password"] {
+            width: 100%; padding: 9px 12px; border: 1px solid #e2e8f0; border-radius: 8px;
+            font-size: 14px; font-family: inherit; outline: none; transition: border .2s;
+        }
+        .form-group input:focus { border-color: #4f46e5; box-shadow: 0 0 0 3px rgba(79,70,229,.08); }
+        .form-group .hint { font-size: 11px; color: #94a3b8; margin-top: 4px; }
+        .form-group input[type="range"] { width: 100%; accent-color: #4f46e5; margin-top: 6px; }
+        .toggle-row { display: flex; align-items: center; justify-content: space-between; }
+        .toggle-row .label { font-size: 13px; font-weight: 600; color: #475569; }
+        .toggle {
+            width: 44px; height: 24px; background: #cbd5e1; border-radius: 12px;
+            cursor: pointer; position: relative; transition: background .2s; display: inline-block;
+        }
+        .toggle.on { background: #4f46e5; }
+        .toggle::after {
+            content: ''; position: absolute; width: 20px; height: 20px; background: #fff;
+            border-radius: 50%; top: 2px; left: 2px; transition: left .2s;
+        }
+        .toggle.on::after { left: 22px; }
+        .toggle-row input[type="checkbox"] { display: none; }
+        .btn {
+            padding: 9px 20px; background: #4f46e5; color: #fff; border: none;
+            border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer;
+            font-family: inherit; transition: background .2s;
+        }
+        .btn:hover { background: #4338ca; }
+        .btn-outline {
+            padding: 9px 20px; background: #fff; color: #4f46e5; border: 1px solid #4f46e5;
+            border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer;
+            font-family: inherit;
+        }
+        .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 12px; margin-bottom: 20px; }
+        .stat-card {
+            background: #fff; border-radius: 12px; box-shadow: 0 1px 3px rgba(0,0,0,.06);
+            padding: 18px; text-align: center;
+        }
+        .stat-card .num { font-size: 28px; font-weight: 700; color: #4f46e5; }
+        .stat-card .lbl { font-size: 12px; color: #94a3b8; margin-top: 4px; }
+        @media (max-width: 480px) {
+            .header { padding: 0 12px; }
+            .container { padding: 0 8px; }
+            .card { padding: 16px; }
+        }
+
+.size-control { display: flex; align-items: center; gap: 8px; margin-top: 4px; }
+.size-input { width: 100px; padding: 6px 10px; border: 1px solid #e2e8f0; border-radius: 8px; font-size: 13px; font-family: inherit; }
+.size-label { font-size: 13px; color: #64748b; }

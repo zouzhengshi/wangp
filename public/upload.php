@@ -4,7 +4,7 @@
  * POST /upload.php
  * 支持单文件和多文件上传
  */
-require_once __DIR__ . '/config.php';
+require_once __DIR__ . '/../app/config/config.php';
 
 // 仅接受 POST
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {

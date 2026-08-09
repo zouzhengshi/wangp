@@ -4,7 +4,7 @@
  * POST /delete.php
  * Body: {"id": 1}  或  {"ids": [1, 2, 3]}
  */
-require_once __DIR__ . '/config.php';
+require_once __DIR__ . '/../app/config/config.php';
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     jsonResponse(405, '仅支持 POST 请求');

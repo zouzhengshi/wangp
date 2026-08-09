@@ -2,7 +2,7 @@
 /**
  * 管理员登出
  */
-require_once __DIR__ . '/../config.php';
+require_once __DIR__ . '/../../app/config/config.php';
 session_start();
 unset($_SESSION['admin_user']);
 session_destroy();

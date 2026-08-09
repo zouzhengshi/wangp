@@ -1,0 +1,29 @@
+* { box-sizing: border-box; }
+
+body {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
+    margin: 0;
+    padding: 24px;
+    background: #f0f9eb;
+    color: #334155;
+    font-family: 'Microsoft YaHei', sans-serif;
+}
+
+.result-card {
+    max-width: 560px;
+    padding: 40px;
+    background: #fff;
+    border-radius: 16px;
+    box-shadow: 0 4px 24px rgba(0, 0, 0, .08);
+    text-align: center;
+}
+
+.result-card h1 { margin-top: 0; }
+.is-success h1 { color: #22c55e; }
+.is-error h1 { color: #dc2626; }
+.credentials { color: #f59e0b; font-weight: 600; }
+.warning { color: #ef4444; }
+.result-card a { color: #3b82f6; }

@@ -3,7 +3,7 @@
  * 文件列表 API
  * GET /api.php?action=list&page=1&per_page=20&search=xxx&ext=pdf
  */
-require_once __DIR__ . '/config.php';
+require_once __DIR__ . '/../app/config/config.php';
 
 if ($_SERVER['REQUEST_METHOD'] !== 'GET') {
     jsonResponse(405, '仅支持 GET 请求');

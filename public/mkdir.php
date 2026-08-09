@@ -4,7 +4,7 @@
  * POST /mkdir.php
  * Body: {"name": "新文件夹"}
  */
-require_once __DIR__ . '/config.php';
+require_once __DIR__ . '/../app/config/config.php';
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     jsonResponse(405, '仅支持 POST 请求');
